@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { z } from "zod";
 
@@ -48,7 +48,10 @@ export async function runOrgAction<S extends z.ZodType, R>(
     const ip = clientIp(await headers());
 
     const data = await withTenant({ orgId, userId: user.id }, async (tx) => {
-      const [membership] = await tx.select().from(memberships).where(eq(memberships.userId, user.id));
+      const [membership] = await tx
+        .select()
+        .from(memberships)
+        .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, user.id)));
       if (!membership) throw notFound("Organization");
       if (!can(membership.role, permission)) throw forbidden();
       return handler({ tx, actor: { orgId, userId: user.id, role: membership.role }, user, input, ip });

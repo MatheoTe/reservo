@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
@@ -29,7 +29,11 @@ export const getOrgContext = cache(async (slug: string): Promise<OrgContext> => 
   const orgId = await orgIdBySlug(slug);
   if (!orgId) notFound();
   const ctx = await withTenant({ orgId, userId: user.id }, async (tx) => {
-    const [membership] = await tx.select().from(memberships).where(eq(memberships.userId, user.id));
+    // Filter by org explicitly; RLS also scopes memberships to the current tenant.
+    const [membership] = await tx
+      .select()
+      .from(memberships)
+      .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, user.id)));
     if (!membership) return null;
     const [org] = await tx.select().from(organizations).where(eq(organizations.id, orgId));
     const [staff] = await tx.select({ id: staffMembers.id }).from(staffMembers).where(eq(staffMembers.userId, user.id));
