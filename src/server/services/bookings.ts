@@ -94,46 +94,55 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
   const endsAt = new Date(startsAt.getTime() + service.durationMinutes * MINUTE);
 
   for (const staffId of available) {
-    try {
-      // Savepoint: a constraint violation must not abort the outer transaction.
-      const booking = await tx.transaction(async (sp) => {
-        const [row] = await sp
-          .insert(bookings)
-          .values({
-            orgId: org.id,
-            staffId,
-            serviceId: service.id,
-            customerId,
-            status: needsDeposit ? "pending_payment" : "confirmed",
-            source: input.source,
-            startsAt,
-            endsAt,
-            blockedFrom: new Date(startsAt.getTime() - service.bufferBeforeMinutes * MINUTE),
-            blockedUntil: new Date(endsAt.getTime() + service.bufferAfterMinutes * MINUTE),
-            priceCents: service.priceCents,
-            depositCents: needsDeposit ? service.depositCents : 0,
-            holdExpiresAt: needsDeposit ? new Date(now.getTime() + org.holdMinutes * MINUTE) : null,
-            customerTimeZone: input.customerTimeZone ?? null,
-            notes: input.notes ?? null,
-            accessToken: randomBytes(24).toString("base64url"),
-          })
-          .returning();
-        return row!;
-      });
+    for (let attempt = 1; ; attempt++) {
+      try {
+        // Savepoint: a constraint violation must not abort the outer transaction.
+        const booking = await tx.transaction(async (sp) => {
+          const [row] = await sp
+            .insert(bookings)
+            .values({
+              orgId: org.id,
+              staffId,
+              serviceId: service.id,
+              customerId,
+              status: needsDeposit ? "pending_payment" : "confirmed",
+              source: input.source,
+              startsAt,
+              endsAt,
+              blockedFrom: new Date(startsAt.getTime() - service.bufferBeforeMinutes * MINUTE),
+              blockedUntil: new Date(endsAt.getTime() + service.bufferAfterMinutes * MINUTE),
+              priceCents: service.priceCents,
+              depositCents: needsDeposit ? service.depositCents : 0,
+              holdExpiresAt: needsDeposit ? new Date(now.getTime() + org.holdMinutes * MINUTE) : null,
+              customerTimeZone: input.customerTimeZone ?? null,
+              notes: input.notes ?? null,
+              accessToken: randomBytes(24).toString("base64url"),
+            })
+            .returning();
+          return row!;
+        });
 
-      if (booking.status === "confirmed") await scheduleConfirmationMessages(tx, booking, now);
-      await audit(tx, {
-        orgId: org.id,
-        actorUserId: input.actorUserId ?? null,
-        action: "booking.created",
-        targetType: "booking",
-        targetId: booking.id,
-        metadata: { source: input.source, status: booking.status, staffId, serviceId: service.id },
-      });
-      return booking;
-    } catch (err) {
-      if (isPgError(err, PG.EXCLUSION_VIOLATION)) continue; // lost the race for this staff member
-      throw err;
+        if (booking.status === "confirmed") await scheduleConfirmationMessages(tx, booking, now);
+        await audit(tx, {
+          orgId: org.id,
+          actorUserId: input.actorUserId ?? null,
+          action: "booking.created",
+          targetType: "booking",
+          targetId: booking.id,
+          metadata: { source: input.source, status: booking.status, staffId, serviceId: service.id },
+        });
+        return booking;
+      } catch (err) {
+        // Lost the race for this staff member: someone else's booking committed first.
+        if (isPgError(err, PG.EXCLUSION_VIOLATION)) break;
+        // Exclusion constraints (unlike unique indexes) have no speculative
+        // insertion: two in-flight inserts of overlapping ranges can wait on
+        // each other and Postgres aborts one as a deadlock victim. Only the
+        // savepoint is rolled back, so re-checking the same staff member is
+        // safe and resolves to either success or a clean 23P01.
+        if (isPgError(err, PG.DEADLOCK_DETECTED) && attempt < 3) continue;
+        throw err;
+      }
     }
   }
   throw slotUnavailable();

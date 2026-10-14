@@ -60,6 +60,8 @@ export const PG = {
   FOREIGN_KEY_VIOLATION: "23503",
   CHECK_VIOLATION: "23514",
   INSUFFICIENT_PRIVILEGE: "42501",
+  DEADLOCK_DETECTED: "40P01",
+  SERIALIZATION_FAILURE: "40001",
 } as const;
 
 interface PgErrorLike {
@@ -91,5 +93,8 @@ export function toAppError(err: unknown): AppError {
   if (pg?.code === PG.EXCLUSION_VIOLATION) return slotUnavailable();
   if (pg?.code === PG.UNIQUE_VIOLATION) return conflict("That already exists.");
   if (pg?.code === PG.INSUFFICIENT_PRIVILEGE) return forbidden();
+  if (pg?.code === PG.DEADLOCK_DETECTED || pg?.code === PG.SERIALIZATION_FAILURE) {
+    return conflict("The system is busy with a conflicting request. Please try again.");
+  }
   return new AppError("INTERNAL", "Something went wrong. Please try again.", { cause: err });
 }
