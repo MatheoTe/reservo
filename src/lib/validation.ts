@@ -126,10 +126,12 @@ export const availabilityQuerySchema = z
   })
   .refine((q) => q.from <= q.to, { message: "`from` must not be after `to`", path: ["to"] });
 
+/** Staff enter wall-clock date + time; the server interprets it in the org's zone. */
 export const dashboardBookingSchema = z.object({
   serviceId: z.uuid(),
   staffId: z.uuid(),
-  start: z.iso.datetime({ offset: true }),
+  date: isoDateSchema,
+  time: wallTimeSchema,
   customer: customerDetailsSchema,
   notes: z.string().trim().max(1000).optional(),
 });
