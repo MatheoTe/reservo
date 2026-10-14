@@ -8,9 +8,27 @@ export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 /** Either the root handle or a transaction - for helpers that work in both. */
 export type Queryable = Database | Tx;
 
+/**
+ * Managed-Postgres URLs (Neon) may carry `channel_binding`, which postgres.js
+ * would forward to the server as an unknown runtime parameter. TLS still comes
+ * from `sslmode`.
+ */
+export function normalizeDatabaseUrl(url: string): string {
+  const parsed = new URL(url);
+  if (!parsed.searchParams.has("channel_binding")) return url;
+  parsed.searchParams.delete("channel_binding");
+  return parsed.toString();
+}
+
+/** PgBouncer-style poolers in transaction mode (Neon's `-pooler` host) can't keep named prepared statements. */
+export function isPooledUrl(url: string): boolean {
+  return new URL(url).hostname.includes("-pooler") || process.env.DATABASE_POOLED === "1";
+}
+
 export function createDatabase(url: string, options: { max?: number } = {}) {
-  const client = postgres(url, {
-    max: options.max ?? 10,
+  const client = postgres(normalizeDatabaseUrl(url), {
+    max: options.max ?? (process.env.VERCEL ? 5 : 10),
+    prepare: !isPooledUrl(url),
     // Silence NOTICE messages (e.g. "relation already exists, skipping").
     onnotice: () => {},
   });

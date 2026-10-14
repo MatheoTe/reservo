@@ -2,13 +2,15 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
+import { normalizeDatabaseUrl } from "../src/server/db/client";
+
 /**
  * Applies migrations as the privileged user, then makes sure the application
  * role can log in with the credentials found in the app connection string.
  * Shared by `npm run db:migrate` and the integration-test global setup.
  */
 export async function runMigrations(adminUrl: string, appUrl: string): Promise<void> {
-  const sql = postgres(adminUrl, { max: 1, onnotice: () => {} });
+  const sql = postgres(normalizeDatabaseUrl(adminUrl), { max: 1, onnotice: () => {} });
   try {
     await migrate(drizzle(sql), { migrationsFolder: "drizzle" });
 
