@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useAction } from "@/components/use-action";
+import { useBrowserTimeZone, useTimeZoneList } from "@/components/use-browser-time-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, NativeSelect } from "@/components/ui/input";
@@ -22,17 +23,11 @@ export function OnboardingForm({ firstName }: { firstName: string }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [timeZone, setTimeZone] = useState("UTC");
-  const [zones, setZones] = useState<string[]>(["UTC"]);
+  const detectedZone = useBrowserTimeZone("UTC");
+  const zones = useTimeZoneList();
+  const [pickedZone, setPickedZone] = useState<string | null>(null);
+  const timeZone = pickedZone ?? detectedZone;
   const { run, pending, fieldErrors } = useAction<{ slug: string }>();
-
-  useEffect(() => {
-    // Detect the browser zone after mount (no hydration mismatch).
-    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const all = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [detected];
-    setZones(all.includes("UTC") ? all : ["UTC", ...all]);
-    setTimeZone(detected);
-  }, []);
 
   return (
     <Card>
@@ -85,7 +80,7 @@ export function OnboardingForm({ firstName }: { firstName: string }) {
           </Field>
           <div className="grid gap-5 sm:grid-cols-[1fr_120px]">
             <Field label="Time zone" htmlFor="timeZone" error={fieldErrors.timeZone} hint="Your opening hours are interpreted in this zone.">
-              <NativeSelect id="timeZone" name="timeZone" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+              <NativeSelect id="timeZone" name="timeZone" value={timeZone} onChange={(e) => setPickedZone(e.target.value)}>
                 {zones.map((z) => (
                   <option key={z} value={z}>
                     {z.replaceAll("_", " ")}

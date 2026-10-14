@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import type { z } from "zod";
 
 import { AppError, toAppError } from "./errors";
 

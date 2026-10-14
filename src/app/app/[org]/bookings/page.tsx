@@ -8,7 +8,7 @@ import type { BookingStatus } from "@/db/schema";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { todayIn } from "@/lib/calendar";
 import { cn } from "@/lib/utils";
-import { getOrgContext, readInOrg } from "@/server/context";
+import { getOrgContext, type OrgContext, readInOrg } from "@/server/context";
 import { formatMoney, formatTime } from "@/server/format";
 import { listBookings } from "@/server/services/bookings";
 import { listServices, listStaff } from "@/server/services/catalog";
@@ -22,6 +22,23 @@ const TABS = [
   { id: "cancelled", label: "Cancelled" },
 ] as const;
 
+type Tab = (typeof TABS)[number]["id"];
+
+async function loadBookings(ctx: OrgContext, tab: Tab, staffId: string | undefined) {
+  const DAY = 86_400_000;
+  const now = new Date();
+  const window: Record<Tab, { from: Date; to: Date; statuses: BookingStatus[] }> = {
+    upcoming: { from: now, to: new Date(now.getTime() + 365 * DAY), statuses: ["confirmed", "pending_payment"] },
+    past: { from: new Date(now.getTime() - 365 * DAY), to: now, statuses: ["confirmed"] },
+    cancelled: { from: new Date(now.getTime() - 365 * DAY), to: new Date(now.getTime() + 365 * DAY), statuses: ["cancelled", "expired"] },
+  };
+  return readInOrg(ctx, async (tx) => ({
+    rows: await listBookings(tx, { ...window[tab], staffId }),
+    services: await listServices(tx),
+    staff: await listStaff(tx, { activeOnly: true }),
+  }));
+}
+
 export default async function BookingsPage({
   params,
   searchParams,
@@ -34,22 +51,10 @@ export default async function BookingsPage({
   const tab = TABS.find((t) => t.id === sp.tab)?.id ?? "upcoming";
   const ctx = await getOrgContext(slug);
   const tz = ctx.org.timeZone;
-  const now = new Date();
   const canAny = ctx.can("bookings:write:any");
   const staffFilter = canAny ? undefined : (ctx.staffId ?? undefined);
 
-  const DAY = 86_400_000;
-  const window: Record<(typeof TABS)[number]["id"], { from: Date; to: Date; statuses: BookingStatus[] }> = {
-    upcoming: { from: now, to: new Date(now.getTime() + 365 * DAY), statuses: ["confirmed", "pending_payment"] },
-    past: { from: new Date(now.getTime() - 365 * DAY), to: now, statuses: ["confirmed"] },
-    cancelled: { from: new Date(now.getTime() - 365 * DAY), to: new Date(now.getTime() + 365 * DAY), statuses: ["cancelled", "expired"] },
-  };
-
-  const { rows, services, staff } = await readInOrg(ctx, async (tx) => ({
-    rows: await listBookings(tx, { ...window[tab], staffId: staffFilter }),
-    services: await listServices(tx),
-    staff: await listStaff(tx, { activeOnly: true }),
-  }));
+  const { rows, services, staff } = await loadBookings(ctx, tab, staffFilter);
   const ordered = tab === "upcoming" ? rows : rows.toReversed();
 
   return (

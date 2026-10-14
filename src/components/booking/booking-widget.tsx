@@ -2,10 +2,11 @@
 
 import { ArrowLeft, CalendarX2, Check, ChevronLeft, ChevronRight, Clock, Globe2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Temporal } from "temporal-polyfill";
 
+import { useBrowserTimeZone } from "@/components/use-browser-time-zone";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
@@ -56,19 +57,19 @@ export function BookingWidget({
   const [serviceId, setServiceId] = useState<string | null>(services.length === 1 ? services[0]!.id : null);
   const [staffId, setStaffId] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
-  const [slots, setSlots] = useState<ApiSlot[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
+  const [result, setResult] = useState<{ key: string; slots: ApiSlot[] } | null>(null);
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [selected, setSelected] = useState<ApiSlot | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [viewerZone, setViewerZone] = useState(orgTimeZone);
+  /** What the customer typed, kept across a slot conflict so they don't retype it. */
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const viewerZone = useBrowserTimeZone(orgTimeZone);
   const [useOrgZone, setUseOrgZone] = useState(false);
 
-  useEffect(() => setViewerZone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
   const displayZone = useOrgZone ? orgTimeZone : viewerZone;
   const zonesDiffer = viewerZone !== orgTimeZone;
-
   const service = services.find((s) => s.id === serviceId) ?? null;
 
   const range = useMemo(() => {
@@ -76,44 +77,48 @@ export function BookingWidget({
     return { from: from.toString(), to: from.add({ days: WINDOW_DAYS - 1 }).toString() };
   }, [offset, orgTimeZone]);
 
-  const loadSlots = useCallback(async () => {
-    if (!serviceId) return;
-    setLoading(true);
-    try {
-      const q = new URLSearchParams({ serviceId, from: range.from, to: range.to });
-      if (staffId) q.set("staffId", staffId);
-      const res = await fetch(`/api/public/${orgSlug}/availability?${q}`, { cache: "no-store" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error?.message ?? "Couldn't load availability");
-      setSlots(body.slots);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't load availability");
-      setSlots([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgSlug, range, serviceId, staffId]);
+  const queryKey = serviceId ? `${serviceId}|${staffId ?? "any"}|${range.from}|${range.to}|${reloadCount}` : null;
 
   useEffect(() => {
-    setSelected(null);
-    setSlots(null);
-    void loadSlots();
-  }, [loadSlots]);
+    if (!serviceId || !queryKey) return;
+    const controller = new AbortController();
+    const q = new URLSearchParams({ serviceId, from: range.from, to: range.to });
+    if (staffId) q.set("staffId", staffId);
+    fetch(`/api/public/${orgSlug}/availability?${q}`, { cache: "no-store", signal: controller.signal })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error?.message ?? "Couldn't load availability");
+        setResult({ key: queryKey, slots: body.slots });
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        toast.error(err instanceof Error ? err.message : "Couldn't load availability");
+        setResult({ key: queryKey, slots: [] });
+      });
+    return () => controller.abort();
+  }, [orgSlug, queryKey, range, serviceId, staffId]);
+
+  // Stale results (from a previous service/staff/week) are never shown.
+  const slots = result && result.key === queryKey ? result.slots : null;
+  const loading = Boolean(serviceId) && slots === null;
 
   // Group by calendar day *in the zone the visitor is reading*, not the org's.
   const days = useMemo(
     () => groupByLocalDate((slots ?? []).map((s) => ({ ...s, iso: s.start, start: Date.parse(s.start) })), displayZone),
     [slots, displayZone],
   );
-
-  useEffect(() => {
-    if (days.length && !days.some((d) => d.date === selectedDate)) setSelectedDate(days[0]!.date);
-  }, [days, selectedDate]);
-
+  const selectedDate = days.some((d) => d.date === pickedDate) ? pickedDate : (days[0]?.date ?? null);
   const daySlots = days.find((d) => d.date === selectedDate)?.items ?? [];
+
+  function resetSelection() {
+    setSelected(null);
+    setPickedDate(null);
+  }
 
   async function submit(fd: FormData) {
     if (!service || !selected) return;
+    const values = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
+    setDraft(values);
     setSubmitting(true);
     setFieldErrors({});
     try {
@@ -125,19 +130,20 @@ export function BookingWidget({
           staffId,
           start: selected.start,
           customerTimeZone: viewerZone,
-          customer: { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || undefined },
-          notes: fd.get("notes") || undefined,
-          website: fd.get("website") || undefined,
+          customer: { name: values.name, email: values.email, phone: values.phone || undefined },
+          notes: values.notes || undefined,
+          website: values.website || undefined,
         }),
       });
       const body = await res.json();
       if (!res.ok) {
         const code = body.error?.code;
         if (code === "SLOT_UNAVAILABLE") {
-          // Someone else got it between viewing and confirming: explain, refresh, keep the form.
+          // Someone else won the race between viewing and confirming. Explain,
+          // refresh availability, and keep what the customer already typed.
           toast.error("That time was just booked by someone else. Please pick another one.");
           setSelected(null);
-          await loadSlots();
+          setReloadCount((n) => n + 1);
           return;
         }
         if (code === "VALIDATION") setFieldErrors(body.error.fieldErrors ?? {});
@@ -180,6 +186,7 @@ export function BookingWidget({
                 setServiceId(s.id);
                 setStaffId(null);
                 setOffset(0);
+                resetSelection();
               }}
               aria-pressed={serviceId === s.id}
               className={cn(
@@ -221,15 +228,15 @@ export function BookingWidget({
 
           {service.staff.length > 1 ? (
             <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Staff">
-              <StaffChip active={staffId === null} onClick={() => setStaffId(null)} label="Any available" />
+              <StaffChip active={staffId === null} onClick={() => { setStaffId(null); resetSelection(); }} label="Any available" />
               {service.staff.map((m) => (
-                <StaffChip key={m.id} active={staffId === m.id} onClick={() => setStaffId(m.id)} label={m.name} color={m.color} />
+                <StaffChip key={m.id} active={staffId === m.id} onClick={() => { setStaffId(m.id); resetSelection(); }} label={m.name} color={m.color} />
               ))}
             </div>
           ) : null}
 
           <div className="mb-4 flex items-center gap-2">
-            <Button variant="outline" size="icon" aria-label="Earlier dates" disabled={offset === 0 || loading} onClick={() => setOffset((o) => Math.max(0, o - WINDOW_DAYS))}>
+            <Button variant="outline" size="icon" aria-label="Earlier dates" disabled={offset === 0 || loading} onClick={() => { setOffset((o) => Math.max(0, o - WINDOW_DAYS)); resetSelection(); }}>
               <ChevronLeft />
             </Button>
             <div className="flex flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Dates">
@@ -248,7 +255,7 @@ export function BookingWidget({
                       key={d.date}
                       role="tab"
                       aria-selected={selectedDate === d.date}
-                      onClick={() => setSelectedDate(d.date)}
+                      onClick={() => setPickedDate(d.date)}
                       className={cn(
                         "flex min-w-16 flex-col items-center rounded-lg border px-3 py-2 text-sm hover:border-primary/60",
                         selectedDate === d.date && "border-primary bg-primary text-primary-foreground hover:border-primary",
@@ -262,7 +269,7 @@ export function BookingWidget({
                 })
               )}
             </div>
-            <Button variant="outline" size="icon" aria-label="Later dates" disabled={loading} onClick={() => setOffset((o) => o + WINDOW_DAYS)}>
+            <Button variant="outline" size="icon" aria-label="Later dates" disabled={loading} onClick={() => { setOffset((o) => o + WINDOW_DAYS); resetSelection(); }}>
               <ChevronRight />
             </Button>
           </div>
@@ -305,17 +312,17 @@ export function BookingWidget({
           <form action={submit} className="grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name" htmlFor="name" error={fieldErrors["customer.name"]}>
-                <Input id="name" name="name" autoComplete="name" required minLength={2} />
+                <Input id="name" name="name" autoComplete="name" required minLength={2} defaultValue={draft.name} />
               </Field>
               <Field label="Email" htmlFor="email" error={fieldErrors["customer.email"]} hint="We'll send your confirmation here.">
-                <Input id="email" name="email" type="email" autoComplete="email" required />
+                <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={draft.email} />
               </Field>
             </div>
             <Field label="Phone (optional)" htmlFor="phone" error={fieldErrors["customer.phone"]}>
-              <Input id="phone" name="phone" type="tel" autoComplete="tel" />
+              <Input id="phone" name="phone" type="tel" autoComplete="tel" defaultValue={draft.phone} />
             </Field>
             <Field label="Anything we should know? (optional)" htmlFor="notes">
-              <Textarea id="notes" name="notes" maxLength={1000} />
+              <Textarea id="notes" name="notes" maxLength={1000} defaultValue={draft.notes} />
             </Field>
             {/* Honeypot: hidden from humans, irresistible to naive bots. */}
             <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />

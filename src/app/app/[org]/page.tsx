@@ -6,33 +6,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, EmptyState, PageHeader, Stat } from "@/components/ui/misc";
 import { localRange, startOfWeek, todayIn } from "@/lib/calendar";
-import { getOrgContext, readInOrg } from "@/server/context";
+import { getOrgContext, type OrgContext, readInOrg } from "@/server/context";
 import { formatMoney, formatTime } from "@/server/format";
 import { listBookings } from "@/server/services/bookings";
 import { listCustomers } from "@/server/services/customers";
+
+/** Data loading lives outside the component: it reads the clock, rendering shouldn't. */
+async function loadOverview(ctx: OrgContext) {
+  const tz = ctx.org.timeZone;
+  const now = new Date();
+  const today = todayIn(tz, now.getTime());
+  const todayRange = localRange(today, 1, tz);
+  const week = localRange(startOfWeek(today), 7, tz);
+  const staffId = ctx.can("bookings:write:any") ? undefined : (ctx.staffId ?? undefined);
+
+  return readInOrg(ctx, async (tx) => {
+    const [todays, weekBookings, upcoming, customers] = await Promise.all([
+      listBookings(tx, { from: todayRange.start, to: todayRange.end, staffId, statuses: ["confirmed", "pending_payment"] }),
+      listBookings(tx, { from: week.start, to: week.end, staffId, statuses: ["confirmed"] }),
+      listBookings(tx, { from: now, to: new Date(now.getTime() + 14 * 86_400_000), staffId, statuses: ["confirmed", "pending_payment"], limit: 6 }),
+      ctx.can("customers:read") ? listCustomers(tx, { limit: 1000 }).then((c) => c.length) : Promise.resolve(null),
+    ]);
+    return { todays, weekBookings, upcoming, customers };
+  });
+}
 
 export default async function OverviewPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: slug } = await params;
   const ctx = await getOrgContext(slug);
   const tz = ctx.org.timeZone;
-  const today = todayIn(tz);
-  const todayRange = localRange(today, 1, tz);
-  const week = localRange(startOfWeek(today), 7, tz);
-  const staffOnly = ctx.can("bookings:write:any") ? undefined : (ctx.staffId ?? undefined);
-
-  const { todays, weekBookings, upcoming, customers } = await readInOrg(ctx, async (tx) => ({
-    todays: await listBookings(tx, { from: todayRange.start, to: todayRange.end, staffId: staffOnly, statuses: ["confirmed", "pending_payment"] }),
-    weekBookings: await listBookings(tx, { from: week.start, to: week.end, staffId: staffOnly, statuses: ["confirmed"] }),
-    upcoming: await listBookings(tx, {
-      from: new Date(),
-      to: new Date(Date.now() + 14 * 86_400_000),
-      staffId: staffOnly,
-      statuses: ["confirmed", "pending_payment"],
-      limit: 6,
-    }),
-    customers: ctx.can("customers:read") ? (await listCustomers(tx, { limit: 1000 })).length : null,
-  }));
-
+  const { todays, weekBookings, upcoming, customers } = await loadOverview(ctx);
   const weekRevenue = weekBookings.reduce((sum, b) => sum + b.priceCents, 0);
 
   return (
