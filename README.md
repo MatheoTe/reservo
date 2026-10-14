@@ -47,15 +47,16 @@ All data below comes from the seeded demo (`npm run seed`): fictional businesses
     <td width="50%"><img src="docs/screenshots/bookings.jpg" width="100%" alt="Bookings list"><br><sub><b>Bookings.</b> Upcoming, past and cancelled, in the business's time zone.</sub></td>
   </tr>
   <tr>
+    <td width="50%"><img src="docs/screenshots/customers.jpg" width="100%" alt="Customers"><br><sub><b>Customers.</b> Visits and last visit per customer, with search.</sub></td>
     <td width="50%"><img src="docs/screenshots/customer-history.jpg" width="100%" alt="Customer history"><br><sub><b>Customer.</b> Booking history and private notes.</sub></td>
+  </tr>
+  <tr>
     <td width="50%"><img src="docs/screenshots/services.jpg" width="100%" alt="Services"><br><sub><b>Services.</b> Duration, price, deposit, cleanup buffers and who performs each one.</sub></td>
-  </tr>
-  <tr>
     <td width="50%"><img src="docs/screenshots/team-hours.jpg" width="100%" alt="Team and working hours"><br><sub><b>Team.</b> Roles, invitations and weekly hours split by breaks.</sub></td>
-    <td width="50%"><img src="docs/screenshots/settings-audit-log.jpg" width="100%" alt="Settings and audit log"><br><sub><b>Settings.</b> Booking rules, holidays, billing and the append-only audit log.</sub></td>
   </tr>
   <tr>
-    <td colspan="2"><img src="docs/screenshots/ci-run.jpg" width="100%" alt="CI run"><br><sub><b>CI.</b> Typecheck, lint and unit tests, integration tests on real Postgres, build and Playwright E2E.</sub></td>
+    <td width="50%"><img src="docs/screenshots/settings-audit-log.jpg" width="100%" alt="Settings and audit log"><br><sub><b>Settings.</b> Booking rules, holidays, billing and the append-only audit log.</sub></td>
+    <td width="50%"><img src="docs/screenshots/ci-run.jpg" width="100%" alt="CI run"><br><sub><b>CI.</b> Typecheck, lint and unit tests, integration tests on real Postgres, build and Playwright E2E.</sub></td>
   </tr>
 </table>
 
