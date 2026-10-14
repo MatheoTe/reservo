@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/misc";
 import { formatDay, formatRangeLabel, localDateOf, localRange, parseDateParam, startOfWeek, todayIn, wallMinutes } from "@/lib/calendar";
+import { layoutLanes } from "@/lib/calendar-layout";
 import { cn } from "@/lib/utils";
 import { getOrgContext, readInOrg } from "@/server/context";
 import { formatTime } from "@/server/format";
@@ -20,28 +21,18 @@ interface Positioned {
   lanes: number;
 }
 
-/** Greedy lane assignment so overlapping bookings (different staff) sit side by side. */
 function layoutDay(rows: BookingRow[], tz: string, startHour: number): Positioned[] {
-  const items = rows
-    .map((b) => {
-      const start = wallMinutes(b.startsAt, tz);
-      const end = Math.max(start + 15, localDateOf(b.endsAt, tz) === localDateOf(b.startsAt, tz) ? wallMinutes(b.endsAt, tz) : 24 * 60);
-      return { booking: b, start, end };
-    })
-    .sort((a, b) => a.start - b.start);
-  const laneEnds: number[] = [];
-  const placed = items.map((it) => {
-    let lane = laneEnds.findIndex((end) => end <= it.start);
-    if (lane === -1) lane = laneEnds.push(it.end) - 1;
-    else laneEnds[lane] = it.end;
-    return { ...it, lane };
+  const timed = rows.map((booking) => {
+    const start = wallMinutes(booking.startsAt, tz);
+    const sameDay = localDateOf(booking.endsAt, tz) === localDateOf(booking.startsAt, tz);
+    return { booking, start, end: Math.max(start + 15, sameDay ? wallMinutes(booking.endsAt, tz) : 24 * 60) };
   });
-  return placed.map((p) => ({
-    booking: p.booking,
-    top: ((p.start - startHour * 60) / 60) * HOUR_PX,
-    height: Math.max(22, ((p.end - p.start) / 60) * HOUR_PX - 2),
-    lane: p.lane,
-    lanes: laneEnds.length,
+  return layoutLanes(timed).map(({ item, lane, lanes }) => ({
+    booking: item.booking,
+    top: ((item.start - startHour * 60) / 60) * HOUR_PX,
+    height: Math.max(22, ((item.end - item.start) / 60) * HOUR_PX - 2),
+    lane,
+    lanes,
   }));
 }
 
