@@ -63,6 +63,12 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
   }
   if (candidates.length === 0) throw slotUnavailable();
 
+  // Contention control, not correctness: queue writers per staff member so the
+  // availability check below reads committed state and most losers get a
+  // clean SLOT_UNAVAILABLE without touching the constraint. Locks are taken
+  // in a global (sorted) order, so two requests can never deadlock on them.
+  await lockStaffSchedules(tx, candidates);
+
   // Abandoned checkouts must not keep blocking the slot.
   await tx
     .update(bookings)
@@ -146,6 +152,16 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
     }
   }
   throw slotUnavailable();
+}
+
+/**
+ * Transaction-scoped advisory locks keyed by staff id, acquired in sorted
+ * order. Released automatically on COMMIT/ROLLBACK.
+ */
+export async function lockStaffSchedules(tx: Tx, staffIds: readonly string[]): Promise<void> {
+  for (const id of [...staffIds].sort()) {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`staff-schedule:${id}`}, 0))`);
+  }
 }
 
 async function orderByLoad(tx: Tx, staffIds: string[], org: Organization, localDate: string): Promise<string[]> {
@@ -323,6 +339,7 @@ export async function confirmDeposit(
 
   // Paid after the hold expired (or after a cancel): try to revive the slot.
   // If someone else has it now, the exclusion constraint says so and we refund.
+  await lockStaffSchedules(tx, [booking.staffId]);
   try {
     const confirmed = await tx.transaction(async (sp) => {
       const [row] = await sp
