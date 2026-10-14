@@ -39,19 +39,19 @@ export function createDatabase(url: string, options: { max?: number } = {}) {
 
 // One pool per process. In dev, Next.js hot reload re-evaluates modules, so
 // the pool lives on globalThis to avoid leaking connections on every edit.
-const globalForDb = globalThis as unknown as { __reservoDb?: ReturnType<typeof createDatabase> };
+const globalForDb = globalThis as unknown as { __slotsmithDb?: ReturnType<typeof createDatabase> };
 
 export function getDb(): Database {
-  if (!globalForDb.__reservoDb) {
+  if (!globalForDb.__slotsmithDb) {
     applyManagedPostgresEnv();
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set");
-    globalForDb.__reservoDb = createDatabase(url);
+    globalForDb.__slotsmithDb = createDatabase(url);
   }
-  return globalForDb.__reservoDb.db;
+  return globalForDb.__slotsmithDb.db;
 }
 
 export async function closeDb(): Promise<void> {
-  await globalForDb.__reservoDb?.client.end({ timeout: 5 });
-  globalForDb.__reservoDb = undefined;
+  await globalForDb.__slotsmithDb?.client.end({ timeout: 5 });
+  globalForDb.__slotsmithDb = undefined;
 }

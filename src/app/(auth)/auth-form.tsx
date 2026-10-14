@@ -158,7 +158,7 @@ export function AuthForm({ mode, demo = false }: { mode: "sign-in" | "sign-up"; 
         ) : null}
 
         <p className="text-muted-foreground text-center text-sm">
-          {mode === "sign-up" ? "Already have an account? " : "New to Reservo? "}
+          {mode === "sign-up" ? "Already have an account? " : "New to Slotsmith? "}
           <Link
             className="text-primary font-medium hover:underline"
             href={`${mode === "sign-up" ? "/sign-in" : "/sign-up"}${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`}

@@ -21,7 +21,7 @@ export function Logo({ className, href = "/" }: { className?: string; href?: str
           <path d="M8 3v4M16 3v4M8 13l2.5 2.5L16 10" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </span>
-      <span>Reservo</span>
+      <span>Slotsmith</span>
     </Link>
   );
 }

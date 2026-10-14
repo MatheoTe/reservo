@@ -34,7 +34,7 @@ describe("transactional outbox + worker", () => {
     handlers = createHandlers({
       mailer,
       payments: new FakePaymentProvider("http://x", "s"),
-      appUrl: "https://reservo.test",
+      appUrl: "https://slotsmith.test",
     });
   });
 
@@ -75,7 +75,7 @@ describe("transactional outbox + worker", () => {
     expect(mailer.sent[0]!.subject).not.toContain(
       formatDateTime(inDaysAt(3, 10), "America/Argentina/Buenos_Aires"),
     );
-    expect(mailer.sent[0]!.text).toContain("https://reservo.test/b/dental/bookings/");
+    expect(mailer.sent[0]!.text).toContain("https://slotsmith.test/b/dental/bookings/");
     const [msg] =
       await admin`select status, processed_at from outbox where topic = 'booking.confirmed'`;
     expect(msg!.status).toBe("done");

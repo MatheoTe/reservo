@@ -14,7 +14,7 @@ import { magicLinkEmail } from "../mail/templates";
 function createAuth() {
   const config = env();
   return betterAuth({
-    appName: "Reservo",
+    appName: "Slotsmith",
     secret: config.BETTER_AUTH_SECRET,
     baseURL: config.BETTER_AUTH_URL,
     // In the public demo everyone shares one account: nobody gets to lock the
@@ -74,10 +74,10 @@ function createAuth() {
 
 export type Auth = ReturnType<typeof createAuth>;
 
-const globalForAuth = globalThis as unknown as { __reservoAuth?: Auth };
+const globalForAuth = globalThis as unknown as { __slotsmithAuth?: Auth };
 
 /** Lazily constructed so `next build` doesn't need secrets to import routes. */
 export function getAuth(): Auth {
-  globalForAuth.__reservoAuth ??= createAuth();
-  return globalForAuth.__reservoAuth;
+  globalForAuth.__slotsmithAuth ??= createAuth();
+  return globalForAuth.__slotsmithAuth;
 }

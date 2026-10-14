@@ -13,4 +13,4 @@ export const DEMO_ADMIN_EMAIL = "admin@reservo.dev";
 /** Fictional accounts on fictional data; the nightly reset restores it anyway. */
 export const DEMO_PASSWORD = "reservo-demo-2026";
 export const DEMO_ORG_SLUG = "glow-studio";
-export const REPO_URL = "https://github.com/MatheoTe/reservo";
+export const REPO_URL = "https://github.com/MatheoTe/slotsmith";

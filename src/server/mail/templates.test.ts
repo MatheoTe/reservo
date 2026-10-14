@@ -9,7 +9,7 @@ const data = {
   serviceName: "Haircut",
   staffName: "Lucía",
   when: "Tue, Mar 10 at 14:30",
-  manageUrl: "https://reservo.test/b/studio/manage/abc",
+  manageUrl: "https://slotsmith.test/b/studio/manage/abc",
 };
 
 describe("email templates", () => {

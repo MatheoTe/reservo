@@ -14,7 +14,7 @@ const schema = z.object({
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
-  EMAIL_FROM: z.string().default("Reservo <no-reply@reservo.local>"),
+  EMAIL_FROM: z.string().default("Slotsmith <no-reply@slotsmith.local>"),
   STRIPE_SECRET_KEY: z
     .string()
     .optional()

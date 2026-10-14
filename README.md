@@ -1,7 +1,7 @@
-# Reservo
+# Slotsmith
 
-[![Live demo](https://img.shields.io/badge/Live_demo-Try_it_now-5b4ee6?style=for-the-badge)](https://reservo-matheote.vercel.app)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/reservo)
+[![Live demo](https://img.shields.io/badge/Live_demo-Try_it_now-5b4ee6?style=for-the-badge)](https://slotsmith.vercel.app)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/slotsmith)
 
 **Multi-tenant booking & scheduling SaaS for service businesses** (clinics, salons, studios).
 Each business gets a public booking page, a shared team calendar, deposits through Stripe and
@@ -9,7 +9,7 @@ automatic confirmation/reminder emails, on a backend designed so that the things
 must never go wrong (double bookings, cross-tenant data leaks, lost or duplicated payments)
 are guaranteed by the database instead of hoped for in application code.
 
-[![CI](https://github.com/MatheoTe/reservo/actions/workflows/ci.yml/badge.svg)](https://github.com/MatheoTe/reservo/actions/workflows/ci.yml)
+[![CI](https://github.com/MatheoTe/slotsmith/actions/workflows/ci.yml/badge.svg)](https://github.com/MatheoTe/slotsmith/actions/workflows/ci.yml)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6)
 ![Postgres 17](https://img.shields.io/badge/Postgres-17_RLS-336791)
@@ -32,9 +32,9 @@ are guaranteed by the database instead of hoped for in application code.
 
 ## Live demo
 
-**<https://reservo-matheote.vercel.app>** - click **Try the demo** and you land, already signed in, in
+**<https://slotsmith.vercel.app>** - click **Try the demo** and you land, already signed in, in
 the dashboard of _Glow Studio_, a fictional salon (no password, no sign-up). From there, book as a
-customer on the [public booking page](https://reservo-matheote.vercel.app/b/glow-studio) and watch the
+customer on the [public booking page](https://slotsmith.vercel.app/b/glow-studio) and watch the
 booking appear on the calendar. Everything is fictional and **the whole database resets every night**;
 you can also create your own business, it'll be gone by morning.
 
@@ -502,8 +502,8 @@ Setting the two URLs by hand works too, and explicit values always win:
 | `DATABASE_URL`                 | `postgres://reservo_app:<APP_PASSWORD>@<endpoint>-pooler.<region>.aws.neon.tech/neondb?sslmode=require` |
 | `DATABASE_ADMIN_URL`           | `postgres://neondb_owner:<OWNER_PASSWORD>@<endpoint>.<region>.aws.neon.tech/neondb?sslmode=require`     |
 | `BETTER_AUTH_SECRET`           | `openssl rand -base64 32`                                                                               |
-| `BETTER_AUTH_URL`              | `https://reservo-matheote.vercel.app`                                                                   |
-| `NEXT_PUBLIC_APP_URL`          | `https://reservo-matheote.vercel.app`                                                                   |
+| `BETTER_AUTH_URL`              | `https://slotsmith.vercel.app`                                                                          |
+| `NEXT_PUBLIC_APP_URL`          | `https://slotsmith.vercel.app`                                                                          |
 | `DEMO_MODE`                    | `1`                                                                                                     |
 | `CRON_SECRET`                  | `openssl rand -hex 32` (Vercel Cron sends it as a bearer token)                                         |
 | `FAKE_PAYMENTS_WEBHOOK_SECRET` | `openssl rand -hex 32`                                                                                  |

@@ -1,5 +1,5 @@
 {
-  "name": "Reservo",
+  "name": "Slotsmith",
   "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
   "service": "app",
   "runServices": ["app", "postgres", "mailpit"],
@@ -7,7 +7,7 @@
   "shutdownAction": "stopCompose",
   "forwardPorts": [3000, "mailpit:8025"],
   "portsAttributes": {
-    "3000": { "label": "Reservo (demo mode)", "onAutoForward": "openPreview" },
+    "3000": { "label": "Slotsmith (demo mode)", "onAutoForward": "openPreview" },
     "mailpit:8025": { "label": "Mailpit (emails)", "onAutoForward": "silent" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",

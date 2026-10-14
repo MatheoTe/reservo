@@ -85,8 +85,8 @@ export default function LandingPage() {
             <span className="text-primary block">A calendar your team trusts.</span>
           </h1>
           <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg text-pretty">
-            Reservo gives every business a public booking page, a shared team calendar, deposits and
-            automatic reminders, on infrastructure engineered for correctness.
+            Slotsmith gives every business a public booking page, a shared team calendar, deposits
+            and automatic reminders, on infrastructure engineered for correctness.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {demo ? (

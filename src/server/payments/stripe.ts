@@ -21,7 +21,7 @@ export class StripePaymentProvider implements PaymentProvider {
     private readonly webhookSecret: string,
     private readonly proPriceId?: string,
   ) {
-    this.stripe = new Stripe(secretKey, { appInfo: { name: "Reservo" } });
+    this.stripe = new Stripe(secretKey, { appInfo: { name: "Slotsmith" } });
   }
 
   async createDepositCheckout(input: DepositCheckoutInput): Promise<CheckoutSession> {

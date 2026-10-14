@@ -7,7 +7,7 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { isDemoMode } from "@/server/demo/mode";
 
 export const metadata: Metadata = {
-  title: { default: "Reservo - Scheduling for service businesses", template: "%s · Reservo" },
+  title: { default: "Slotsmith - Scheduling for service businesses", template: "%s · Slotsmith" },
   description: "Online booking, calendars and payments for clinics, salons and studios.",
 };
 

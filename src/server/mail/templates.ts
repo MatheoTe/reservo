@@ -21,11 +21,11 @@ function layout(title: string, bodyHtml: string, cta?: { label: string; url: str
   return `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#18181b">
 <div style="max-width:560px;margin:0 auto;padding:32px 16px">
 <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid #e4e4e7">
-<p style="margin:0 0 24px;font-weight:700;color:#4f46e5;letter-spacing:-0.01em">Reservo</p>
+<p style="margin:0 0 24px;font-weight:700;color:#4f46e5;letter-spacing:-0.01em">Slotsmith</p>
 <h1 style="font-size:20px;margin:0 0 16px">${escape(title)}</h1>
 ${bodyHtml}${button}
 </div>
-<p style="font-size:12px;color:#71717a;text-align:center;margin-top:16px">Sent by Reservo on behalf of the business you booked with.</p>
+<p style="font-size:12px;color:#71717a;text-align:center;margin-top:16px">Sent by Slotsmith on behalf of the business you booked with.</p>
 </div></body></html>`;
 }
 
@@ -100,10 +100,10 @@ export function invitationEmail(d: {
   role: string;
   url: string;
 }): EmailMessage {
-  const line = `${d.inviterName} invited you to join ${d.orgName} on Reservo as ${d.role}.`;
+  const line = `${d.inviterName} invited you to join ${d.orgName} on Slotsmith as ${d.role}.`;
   return {
     to: d.to,
-    subject: `You're invited to ${d.orgName} on Reservo`,
+    subject: `You're invited to ${d.orgName} on Slotsmith`,
     text: `${line}\n\nAccept the invitation: ${d.url}\n\nThis link expires in 7 days.`,
     html: layout(
       "You've been invited",
@@ -119,10 +119,10 @@ export function invitationEmail(d: {
 export function magicLinkEmail(d: { to: string; url: string }): EmailMessage {
   return {
     to: d.to,
-    subject: "Your Reservo sign-in link",
-    text: `Sign in to Reservo: ${d.url}\n\nThe link expires in 5 minutes. If you didn't request it, ignore this email.`,
+    subject: "Your Slotsmith sign-in link",
+    text: `Sign in to Slotsmith: ${d.url}\n\nThe link expires in 5 minutes. If you didn't request it, ignore this email.`,
     html: layout(
-      "Sign in to Reservo",
+      "Sign in to Slotsmith",
       `<p style="line-height:1.6">Click the button below to sign in. The link expires in 5 minutes.</p><p style="color:#71717a;font-size:14px">If you didn't request this, you can safely ignore it.</p>`,
       { label: "Sign in", url: d.url },
     ),

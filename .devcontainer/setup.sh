@@ -21,7 +21,7 @@ DEMO_MODE=1
 MAIL_TRANSPORT=smtp
 SMTP_HOST=mailpit
 SMTP_PORT=1025
-EMAIL_FROM="Reservo <no-reply@reservo.local>"
+EMAIL_FROM="Slotsmith <no-reply@slotsmith.local>"
 FAKE_PAYMENTS_WEBHOOK_SECRET=dev-fake-webhook-secret
 ENV
   echo "Wrote .env (app URL: ${APP_URL})"

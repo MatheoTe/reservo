@@ -69,7 +69,7 @@ export function OnboardingForm({ firstName }: { firstName: string }) {
             hint="Lowercase letters, numbers and dashes."
           >
             <div className="border-input bg-muted/50 text-muted-foreground flex items-center rounded-md border pl-3 text-sm shadow-xs">
-              <span className="whitespace-nowrap">reservo.app/b/</span>
+              <span className="whitespace-nowrap">slotsmith.app/b/</span>
               <Input
                 id="slug"
                 name="slug"

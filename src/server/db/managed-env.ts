@@ -1,7 +1,7 @@
 /**
  * Maps the variables a managed Postgres integration provides (Neon on Vercel:
  * an owner role, pooled `DATABASE_URL` + direct `DATABASE_URL_UNPOOLED`) onto
- * the two connections Reservo needs:
+ * the two connections Slotsmith needs:
  *
  * - `DATABASE_ADMIN_URL`: the owner, direct host - migrations, seed, reset.
  * - `DATABASE_URL`: the least-privilege `reservo_app` role, pooled host. Built

@@ -5,16 +5,16 @@ import type { PaymentProvider } from "./types";
 
 export * from "./types";
 
-const globalForPayments = globalThis as unknown as { __reservoPayments?: PaymentProvider };
+const globalForPayments = globalThis as unknown as { __slotsmithPayments?: PaymentProvider };
 
 /**
  * Stripe when keys are configured (and not in demo mode), otherwise the local fake. The choice is
  * made once per process; nothing else in the app branches on it.
  */
 export function getPaymentProvider(): PaymentProvider {
-  if (!globalForPayments.__reservoPayments) {
+  if (!globalForPayments.__slotsmithPayments) {
     const key = isDemoMode() ? undefined : process.env.STRIPE_SECRET_KEY;
-    globalForPayments.__reservoPayments = key
+    globalForPayments.__slotsmithPayments = key
       ? new StripePaymentProvider(
           key,
           process.env.STRIPE_WEBHOOK_SECRET ?? "",
@@ -25,9 +25,9 @@ export function getPaymentProvider(): PaymentProvider {
           process.env.FAKE_PAYMENTS_WEBHOOK_SECRET ?? "dev-fake-webhook-secret",
         );
   }
-  return globalForPayments.__reservoPayments;
+  return globalForPayments.__slotsmithPayments;
 }
 
 export function setPaymentProvider(provider: PaymentProvider): void {
-  globalForPayments.__reservoPayments = provider;
+  globalForPayments.__slotsmithPayments = provider;
 }
