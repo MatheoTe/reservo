@@ -1,5 +1,8 @@
 # Reservo
 
+[![Live demo](https://img.shields.io/badge/Live_demo-Try_it_now-5b4ee6?style=for-the-badge)](https://reservo-demo.vercel.app)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/reservo)
+
 **Multi-tenant booking & scheduling SaaS for service businesses** (clinics, salons, studios).
 Each business gets a public booking page, a shared team calendar, deposits through Stripe and
 automatic confirmation/reminder emails, on a backend designed so that the things that
@@ -24,6 +27,24 @@ are guaranteed by the database instead of hoped for in application code.
 | Time        | Temporal (`temporal-polyfill`) for every wall-clock/instant conversion         |
 | Tests       | Vitest (unit + integration on real Postgres), Playwright (E2E), GitHub Actions |
 | Local infra | docker-compose: Postgres + Mailpit                                             |
+
+---
+
+## Live demo
+
+**<https://reservo-demo.vercel.app>** - click **Try the demo** and you land, already signed in, in
+the dashboard of _Glow Studio_, a fictional salon (no password, no sign-up). From there, book as a
+customer on the [public booking page](https://reservo-demo.vercel.app/b/glow-studio) and watch the
+booking appear on the calendar. Everything is fictional and **the whole database resets every night**;
+you can also create your own business, it'll be gone by morning.
+
+What's different from a real deployment (`DEMO_MODE=1`): payments always use the signed fake checkout
+(no Stripe), emails are logged instead of sent, and the outbox runs right after each request plus a
+Vercel Cron job instead of a long-running worker.
+
+Prefer to run it yourself? **Open in Codespaces** (badge above): Postgres, Mailpit, migrations and
+seed are set up for you and the app starts in demo mode on port 3000 (emails visible in Mailpit on
+port 8025). No secrets needed.
 
 ---
 
@@ -465,6 +486,38 @@ Pay with `4242 4242 4242 4242`. Handled events: `checkout.session.completed`,
 `checkout.session.async_payment_succeeded`, `checkout.session.expired`,
 `customer.subscription.deleted`.
 
+### Deploying the demo (Vercel + Neon)
+
+The app needs two connection strings to the same database: the app role, which RLS always applies to,
+and the owner, used only for migrations, seeding and the nightly reset. On Neon:
+
+| Variable                       | Value                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                 | `postgres://reservo_app:<APP_PASSWORD>@<endpoint>-pooler.<region>.aws.neon.tech/neondb?sslmode=require` |
+| `DATABASE_ADMIN_URL`           | `postgres://neondb_owner:<OWNER_PASSWORD>@<endpoint>.<region>.aws.neon.tech/neondb?sslmode=require`     |
+| `BETTER_AUTH_SECRET`           | `openssl rand -base64 32`                                                                               |
+| `BETTER_AUTH_URL`              | `https://reservo-demo.vercel.app`                                                                       |
+| `NEXT_PUBLIC_APP_URL`          | `https://reservo-demo.vercel.app`                                                                       |
+| `DEMO_MODE`                    | `1`                                                                                                     |
+| `CRON_SECRET`                  | `openssl rand -hex 32` (Vercel Cron sends it as a bearer token)                                         |
+| `FAKE_PAYMENTS_WEBHOOK_SECRET` | `openssl rand -hex 32`                                                                                  |
+
+- `DATABASE_URL` uses the **pooled** host (`-pooler`): serverless functions open many short
+  connections. Prepared statements are turned off automatically for pooled hosts.
+  `DATABASE_ADMIN_URL` uses the **direct** host (migrations, advisory lock during reset).
+- `reservo_app` doesn't exist yet: the first build creates it with `<APP_PASSWORD>`, taken from
+  `DATABASE_URL`. Use a long random one (`openssl rand -hex 24`); Neon rejects weak passwords.
+- `npm run vercel-build` (set in `vercel.json`) applies migrations and, in demo mode, seeds an empty
+  database before `next build`.
+- Neon's owner role is not a superuser. Migration `0003` detects an owner that can't bypass RLS and
+  gives it (and only it) an explicit policy, so the `SECURITY DEFINER` functions and the reset keep
+  working. `btree_gist` is a trusted extension and installs fine.
+- `channel_binding=require` from Neon's copy-paste URL is stripped automatically (postgres.js would
+  send it as a server parameter).
+- Crons (`vercel.json`): `/api/demo/reset` daily at 06:00 UTC, `/api/cron/outbox` daily as a safety
+  net. The Hobby plan only allows daily crons; on Pro, run the outbox every few minutes
+  (`*/5 * * * *`) so reminders go out on time.
+
 ---
 
 ## Testing
@@ -503,13 +556,14 @@ integration (Postgres 17 service container) and build + E2E (Postgres service co
 ```
 drizzle/                    SQL migrations (0001 = RLS, roles, exclusion constraint, definer fns)
 docker/postgres/init/       creates the test database in docker-compose
-scripts/                    migrate, reset, seed
+scripts/                    migrate, reset, seed, deploy-db (build-time migrate + demo seed)
 src/
   app/
     (auth)/                 sign-in / sign-up (password + magic link)
     app/[org]/              dashboard: overview, calendar, bookings, customers, services, team, settings
     b/[org]/                public booking page, booking status/cancel, fake checkout
-    api/                    auth, public availability/bookings, webhooks (stripe, fake), health
+    api/                    auth, public availability/bookings, webhooks (stripe, fake), health,
+                            demo sign-in/reset and outbox cron (demo mode)
     onboarding/ invite/     org creation, invitation acceptance
   components/               ui primitives, booking widget, dashboard shell
   db/schema.ts              Drizzle schema (tables, enums, checks, composite FKs)
@@ -523,7 +577,8 @@ src/
     actions/                server actions (all through runOrgAction)
     services/               domain logic: bookings, availability, team, catalog, schedule...
     payments/               port, Stripe adapter, signed fake, webhook application
-    outbox/ mail/           outbox enqueue/topics/backoff, mailer + templates
+    outbox/ mail/           outbox enqueue/topics/backoff/drain, mailer + templates
+    demo/                   demo mode: seed, nightly reset, cron auth
     rate-limit.ts audit.ts errors.ts http.ts
   worker/                   outbox processor, handlers, main loop
   proxy.ts                  optimistic auth gate (Next 16 "middleware")

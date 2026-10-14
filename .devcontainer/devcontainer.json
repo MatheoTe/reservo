@@ -1,0 +1,28 @@
+{
+  "name": "Reservo",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "service": "app",
+  "runServices": ["app", "postgres", "mailpit"],
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [3000, "mailpit:8025"],
+  "portsAttributes": {
+    "3000": { "label": "Reservo (demo mode)", "onAutoForward": "openPreview" },
+    "mailpit:8025": { "label": "Mailpit (emails)", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postAttachCommand": "npm run dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    },
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb" }
+}

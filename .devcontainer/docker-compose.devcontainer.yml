@@ -1,0 +1,19 @@
+# Layered on top of ../docker-compose.yml (Postgres + Mailpit) for Codespaces /
+# Dev Containers. The app container shares Postgres' network namespace, so the
+# database is at localhost:5432 and Mailpit at mailpit:1025.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-24-bookworm
+    command: sleep infinity
+    network_mode: service:postgres
+    environment:
+      # Integration tests default to the host port 5433; inside the container it's 5432.
+      TEST_DATABASE_URL: postgres://reservo_app:reservo_app_dev_password@localhost:5432/reservo_test
+      TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/reservo_test
+    volumes:
+      - ../..:/workspaces:cached
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
