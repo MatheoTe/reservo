@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { applyManagedPostgresEnv } from "@/server/db/managed-env";
 import { isAuthorizedCron } from "@/server/demo/cron-auth";
 import { isDemoMode } from "@/server/demo/mode";
 import { resetDemoData } from "@/server/demo/reset";
@@ -16,6 +17,7 @@ async function handle(request: Request) {
   if (!isDemoMode()) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!isAuthorizedCron(request))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  applyManagedPostgresEnv();
   const adminUrl = process.env.DATABASE_ADMIN_URL;
   if (!adminUrl)
     return NextResponse.json({ error: "DATABASE_ADMIN_URL is not set" }, { status: 500 });

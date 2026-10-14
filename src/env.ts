@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { applyManagedPostgresEnv } from "@/server/db/managed-env";
+
 /**
  * Server environment, validated once on first use (not at import time, so
  * `next build` and unit tests don't need a full .env).
@@ -34,6 +36,7 @@ let cached: Env | undefined;
 
 export function env(): Env {
   if (!cached) {
+    applyManagedPostgresEnv();
     const parsed = schema.safeParse(process.env);
     if (!parsed.success) {
       const issues = parsed.error.issues

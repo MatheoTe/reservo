@@ -3,6 +3,8 @@ import postgres from "postgres";
 
 import * as schema from "@/db/schema";
 
+import { applyManagedPostgresEnv } from "./managed-env";
+
 export type Database = ReturnType<typeof createDatabase>["db"];
 export type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 /** Either the root handle or a transaction - for helpers that work in both. */
@@ -41,6 +43,7 @@ const globalForDb = globalThis as unknown as { __reservoDb?: ReturnType<typeof c
 
 export function getDb(): Database {
   if (!globalForDb.__reservoDb) {
+    applyManagedPostgresEnv();
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set");
     globalForDb.__reservoDb = createDatabase(url);

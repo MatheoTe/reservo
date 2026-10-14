@@ -1,6 +1,6 @@
 # Reservo
 
-[![Live demo](https://img.shields.io/badge/Live_demo-Try_it_now-5b4ee6?style=for-the-badge)](https://reservo-demo.vercel.app)
+[![Live demo](https://img.shields.io/badge/Live_demo-Try_it_now-5b4ee6?style=for-the-badge)](https://reservo-matheote.vercel.app)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/reservo)
 
 **Multi-tenant booking & scheduling SaaS for service businesses** (clinics, salons, studios).
@@ -32,9 +32,9 @@ are guaranteed by the database instead of hoped for in application code.
 
 ## Live demo
 
-**<https://reservo-demo.vercel.app>** - click **Try the demo** and you land, already signed in, in
+**<https://reservo-matheote.vercel.app>** - click **Try the demo** and you land, already signed in, in
 the dashboard of _Glow Studio_, a fictional salon (no password, no sign-up). From there, book as a
-customer on the [public booking page](https://reservo-demo.vercel.app/b/glow-studio) and watch the
+customer on the [public booking page](https://reservo-matheote.vercel.app/b/glow-studio) and watch the
 booking appear on the calendar. Everything is fictional and **the whole database resets every night**;
 you can also create your own business, it'll be gone by morning.
 
@@ -489,15 +489,21 @@ Pay with `4242 4242 4242 4242`. Handled events: `checkout.session.completed`,
 ### Deploying the demo (Vercel + Neon)
 
 The app needs two connection strings to the same database: the app role, which RLS always applies to,
-and the owner, used only for migrations, seeding and the nightly reset. On Neon:
+and the owner, used only for migrations, seeding and the nightly reset.
+
+With the Neon integration from Vercel's Storage tab, you only add `DATABASE_APP_PASSWORD`
+(`openssl rand -hex 24`): the integration sets the owner's `DATABASE_URL` (pooled) and
+`DATABASE_URL_UNPOOLED` (direct), and `src/server/db/managed-env.ts` maps them to
+`DATABASE_ADMIN_URL` = the direct owner URL and `DATABASE_URL` = the pooled URL as `reservo_app`.
+Setting the two URLs by hand works too, and explicit values always win:
 
 | Variable                       | Value                                                                                                   |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`                 | `postgres://reservo_app:<APP_PASSWORD>@<endpoint>-pooler.<region>.aws.neon.tech/neondb?sslmode=require` |
 | `DATABASE_ADMIN_URL`           | `postgres://neondb_owner:<OWNER_PASSWORD>@<endpoint>.<region>.aws.neon.tech/neondb?sslmode=require`     |
 | `BETTER_AUTH_SECRET`           | `openssl rand -base64 32`                                                                               |
-| `BETTER_AUTH_URL`              | `https://reservo-demo.vercel.app`                                                                       |
-| `NEXT_PUBLIC_APP_URL`          | `https://reservo-demo.vercel.app`                                                                       |
+| `BETTER_AUTH_URL`              | `https://reservo-matheote.vercel.app`                                                                   |
+| `NEXT_PUBLIC_APP_URL`          | `https://reservo-matheote.vercel.app`                                                                   |
 | `DEMO_MODE`                    | `1`                                                                                                     |
 | `CRON_SECRET`                  | `openssl rand -hex 32` (Vercel Cron sends it as a bearer token)                                         |
 | `FAKE_PAYMENTS_WEBHOOK_SECRET` | `openssl rand -hex 32`                                                                                  |
