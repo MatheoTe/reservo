@@ -1,12 +1,28 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, lte, max, or, sql } from "drizzle-orm";
 
 import { bookings, customers, services } from "@/db/schema";
 
 import type { Tx } from "../db/client";
 import { notFound } from "../errors";
 
+/**
+ * A visit is a confirmed booking that has already started. Aggregated once in a
+ * derived table and joined by customer: a correlated subquery written with raw
+ * `sql` loses the outer table qualifier and silently compares the booking with
+ * itself, which is how every customer used to show 0 visits.
+ */
 export async function listCustomers(tx: Tx, opts: { search?: string; limit?: number } = {}) {
   const term = opts.search?.trim();
+  const visits = tx
+    .select({
+      customerId: bookings.customerId,
+      visits: count().as("visits"),
+      lastVisit: max(bookings.startsAt).as("last_visit"),
+    })
+    .from(bookings)
+    .where(and(eq(bookings.status, "confirmed"), lte(bookings.startsAt, sql`now()`)))
+    .groupBy(bookings.customerId)
+    .as("visits");
   return tx
     .select({
       id: customers.id,
@@ -14,10 +30,11 @@ export async function listCustomers(tx: Tx, opts: { search?: string; limit?: num
       email: customers.email,
       phone: customers.phone,
       createdAt: customers.createdAt,
-      bookingCount: sql<number>`(select count(*)::int from ${bookings} b where b.customer_id = ${customers.id} and b.status = 'confirmed')`,
-      lastVisit: sql<Date | null>`(select max(b.starts_at) from ${bookings} b where b.customer_id = ${customers.id} and b.status = 'confirmed')`,
+      visits: sql<number>`coalesce(${visits.visits}, 0)`.mapWith(Number),
+      lastVisit: visits.lastVisit,
     })
     .from(customers)
+    .leftJoin(visits, eq(visits.customerId, customers.id))
     .where(
       term
         ? or(ilike(customers.name, `%${term}%`), ilike(customers.email, `%${term}%`))

@@ -68,7 +68,7 @@ export default async function CustomersPage({
                     </Link>
                   </TD>
                   <TD className="text-muted-foreground">{c.phone ?? "-"}</TD>
-                  <TD className="text-right tabular-nums">{c.bookingCount}</TD>
+                  <TD className="text-right tabular-nums">{c.visits}</TD>
                   <TD className="text-muted-foreground text-right">
                     {c.lastVisit
                       ? new Date(c.lastVisit).toLocaleDateString("en-US", {
