@@ -69,7 +69,9 @@ export function BookingWidget({
   const [useOrgZone, setUseOrgZone] = useState(false);
 
   const displayZone = useOrgZone ? orgTimeZone : viewerZone;
-  const zonesDiffer = viewerZone !== orgTimeZone;
+  // Browsers report CLDR-canonical ids ("America/Buenos_Aires") while the org may
+  // store the IANA alias ("America/Argentina/Buenos_Aires"): compare canonical forms.
+  const zonesDiffer = canonicalZone(viewerZone) !== canonicalZone(orgTimeZone);
   const service = services.find((s) => s.id === serviceId) ?? null;
 
   const range = useMemo(() => {
@@ -344,6 +346,14 @@ export function BookingWidget({
       ) : null}
     </div>
   );
+}
+
+function canonicalZone(timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone }).resolvedOptions().timeZone;
+  } catch {
+    return timeZone;
+  }
 }
 
 function StaffChip({ active, onClick, label, color }: { active: boolean; onClick: () => void; label: string; color?: string }) {
