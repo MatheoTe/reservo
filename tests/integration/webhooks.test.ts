@@ -10,7 +10,7 @@ import {
   createTestOrg,
   insertBookingDirect,
   type TestOrg,
-  tomorrowAt,
+  inDaysAt,
   useCleanDatabase,
 } from "./helpers";
 
@@ -22,7 +22,7 @@ async function bookWithDeposit(org: TestOrg, hour = 10) {
     {
       serviceId: org.serviceId,
       staffId: null,
-      start: tomorrowAt(hour).toISOString(),
+      start: inDaysAt(3, hour).toISOString(),
       customer: { name: "Dana", email: "dana@example.com", phone: null },
     },
     { payments: provider },
@@ -170,7 +170,7 @@ describe("payment webhooks", () => {
   it("payment after the hold expired and the slot was taken schedules a refund", async () => {
     const result = await bookWithDeposit(org);
     await admin`update bookings set status = 'expired' where id = ${result.bookingId}`;
-    await insertBookingDirect(org, { start: tomorrowAt(10) }); // someone else got the slot
+    await insertBookingDirect(org, { start: inDaysAt(3, 10) }); // someone else got the slot
     const payment = await paymentFor(result.bookingId);
     await applyPaymentEvent("fake", {
       id: "evt_late_taken",

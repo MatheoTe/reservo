@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
+import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeEach } from "vitest";
 
 import {
@@ -191,13 +192,20 @@ export async function insertBookingDirect(
   });
 }
 
-/** Next day at 10:00 in the org zone (Buenos Aires = UTC-3, no DST). */
-export function tomorrowAt(hour: number, minute = 0): Date {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1);
-  d.setUTCHours(hour + 3, minute, 0, 0);
-  return d;
+/**
+ * `days` from today at a wall-clock hour in the test orgs' zone (Buenos Aires).
+ * Tests that depend on the 24h reminder use >= 2 days so the result doesn't
+ * depend on what time of day the suite runs.
+ */
+export function inDaysAt(days: number, hour: number, minute = 0): Date {
+  // Calendar math in the org's zone, so the result is right even late at night
+  // when the UTC date has already rolled over.
+  const zone = "America/Argentina/Buenos_Aires";
+  const local = Temporal.Now.plainDateISO(zone).add({ days }).toPlainDateTime({ hour, minute });
+  return new Date(local.toZonedDateTime(zone).epochMilliseconds);
 }
+
+export const tomorrowAt = (hour: number, minute = 0) => inDaysAt(1, hour, minute);
 
 export async function countBookings(orgId: string, status?: string) {
   const rows = status

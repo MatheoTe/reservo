@@ -12,6 +12,7 @@ import { processOutboxBatch, runMaintenance } from "@/worker/processor";
 
 import {
   admin,
+  inDaysAt,
   createTestOrg,
   insertBookingDirect,
   type TestOrg,
@@ -41,7 +42,7 @@ describe("transactional outbox + worker", () => {
     return createPublicBooking(org.slug, {
       serviceId: org.serviceId,
       staffId: null,
-      start: tomorrowAt(hour).toISOString(),
+      start: inDaysAt(3, hour).toISOString(),
       customer: { name: "Eva", email: "eva@example.com", phone: null },
       customerTimeZone: "Europe/Madrid",
     });
@@ -70,9 +71,9 @@ describe("transactional outbox + worker", () => {
     expect(mailer.sent).toHaveLength(1);
     expect(mailer.sent[0]!.to).toBe("eva@example.com");
     // Org is in Buenos Aires; the customer booked from Madrid and reads Madrid time.
-    expect(mailer.sent[0]!.subject).toContain(formatDateTime(tomorrowAt(10), "Europe/Madrid"));
+    expect(mailer.sent[0]!.subject).toContain(formatDateTime(inDaysAt(3, 10), "Europe/Madrid"));
     expect(mailer.sent[0]!.subject).not.toContain(
-      formatDateTime(tomorrowAt(10), "America/Argentina/Buenos_Aires"),
+      formatDateTime(inDaysAt(3, 10), "America/Argentina/Buenos_Aires"),
     );
     expect(mailer.sent[0]!.text).toContain("https://reservo.test/b/dental/bookings/");
     const [msg] =
