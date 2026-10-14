@@ -107,9 +107,15 @@ test.describe.serial("booking journey", () => {
     await expect(page.getByText("Deep tissue massage")).toBeVisible();
   });
 
-  test("another user cannot open this organization's dashboard", async ({ page }) => {
+  test("the owner of another business cannot open this organization's dashboard", async ({ page }) => {
     await signUp(page, { name: "Outsider", email: `outsider-${run}@e2e.test`, password: "e2e-password-123" });
     await expect(page).toHaveURL(/\/onboarding$/);
+    // Being an owner *somewhere* must not grant anything here.
+    await page.getByLabel("Business name").fill(`Rival ${run}`);
+    await page.getByLabel("Booking page URL").fill(`rival-${run}`);
+    await page.getByRole("button", { name: "Create business" }).click();
+    await expect(page).toHaveURL(new RegExp(`/app/rival-${run}$`));
+
     const response = await page.goto(`/app/${slug}/bookings`);
     expect(response?.status()).toBe(404);
     await expect(page.getByText(customer.name)).toHaveCount(0);

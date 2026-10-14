@@ -127,6 +127,17 @@ describe("row level security", () => {
     expect(memberRows.every((m) => m.userId === a.owner.id)).toBe(true);
   });
 
+  it("inside a tenant, a user's memberships in other orgs are invisible (no role borrowing)", async () => {
+    // Regression: owner of A operating inside B's context. A lookup that forgot
+    // `org_id = B` used to find their *A* membership and grant owner rights on B.
+    const rows = await withTenant({ orgId: b.orgId, userId: a.owner.id }, async (tx) => ({
+      memberships: await tx.select().from(memberships).where(eq(memberships.userId, a.owner.id)),
+      organizations: await tx.select().from(organizations),
+    }));
+    expect(rows.memberships).toEqual([]);
+    expect(rows.organizations.map((o) => o.id)).toEqual([b.orgId]);
+  });
+
   it("an organization can't be created under someone else's id", async () => {
     const err = await withTenant({ orgId: a.orgId }, (tx) =>
       tx.insert(organizations).values({ id: randomUUID(), name: "Sneaky", slug: "sneaky", timeZone: "UTC" }),
