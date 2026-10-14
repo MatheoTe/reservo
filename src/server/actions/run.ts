@@ -12,6 +12,7 @@ import type { Tx } from "../db/client";
 import { orgIdBySlug, withTenant } from "../db/tenant";
 import { type ErrorCode, forbidden, notFound, toAppError } from "../errors";
 import { clientIp, parseOrThrow } from "../http";
+import { drainOutboxAfterResponse } from "../outbox/drain";
 import type { Actor } from "../services/team";
 
 export type ActionResult<T = void> =
@@ -65,6 +66,7 @@ export async function runOrgAction<S extends z.ZodType, R>(
         ip,
       });
     });
+    drainOutboxAfterResponse();
     return { ok: true, data };
   } catch (err) {
     return toActionError(err);

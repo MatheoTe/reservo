@@ -10,7 +10,9 @@ import {
 import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
+import { DemoSignInButton } from "@/components/demo/demo-sign-in-button";
 import { Button } from "@/components/ui/button";
+import { DEMO_ORG_SLUG, isDemoMode } from "@/server/demo/mode";
 
 const features = [
   {
@@ -46,6 +48,7 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const demo = isDemoMode();
   return (
     <div className="relative overflow-hidden">
       <div
@@ -55,15 +58,19 @@ export default function LandingPage() {
       <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Logo />
         <nav className="flex items-center gap-2">
-          <Button variant="ghost" asChild>
-            <Link href="/b/glow-studio">Live demo</Link>
+          <Button variant="ghost" asChild className="max-sm:hidden">
+            <Link href={`/b/${DEMO_ORG_SLUG}`}>Booking page</Link>
           </Button>
           <Button variant="ghost" asChild>
             <Link href="/sign-in">Sign in</Link>
           </Button>
-          <Button asChild>
-            <Link href="/sign-up">Get started</Link>
-          </Button>
+          {demo ? (
+            <DemoSignInButton />
+          ) : (
+            <Button asChild>
+              <Link href="/sign-up">Get started</Link>
+            </Button>
+          )}
         </nav>
       </header>
 
@@ -82,15 +89,28 @@ export default function LandingPage() {
             automatic reminders, on infrastructure engineered for correctness.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" asChild>
-              <Link href="/sign-up">
-                Create your booking page <ArrowRight />
-              </Link>
-            </Button>
+            {demo ? (
+              <DemoSignInButton size="lg">Try the demo as the owner</DemoSignInButton>
+            ) : (
+              <Button size="lg" asChild>
+                <Link href="/sign-up">
+                  Create your booking page <ArrowRight />
+                </Link>
+              </Button>
+            )}
             <Button size="lg" variant="outline" asChild>
-              <Link href="/b/glow-studio">Book at the demo studio</Link>
+              <Link href={`/b/${DEMO_ORG_SLUG}`}>Book at the demo studio</Link>
             </Button>
           </div>
+          {demo ? (
+            <p className="text-muted-foreground mt-4 text-sm">
+              One click, no sign-up: you land in the dashboard of a fictional salon. Or{" "}
+              <Link className="text-primary font-medium hover:underline" href="/sign-up">
+                create your own business
+              </Link>
+              .
+            </p>
+          ) : null}
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-4 px-6 pb-24 sm:grid-cols-2 lg:grid-cols-3">

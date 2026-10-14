@@ -11,7 +11,9 @@
   "scripts": {
     "dev": "concurrently -k -n web,worker -c blue,magenta \"next dev\" \"tsx watch src/worker/main.ts\"",
     "dev:web": "next dev",
+    "dev:demo": "DEMO_MODE=1 next dev",
     "build": "next build",
+    "vercel-build": "tsx scripts/deploy-db.ts && next build",
     "start": "next start",
     "worker": "tsx src/worker/main.ts",
     "typecheck": "tsc --noEmit",

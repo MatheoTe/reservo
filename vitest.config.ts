@@ -40,6 +40,11 @@ export default defineConfig({
             FAKE_PAYMENTS_WEBHOOK_SECRET: "test-fake-secret",
             NEXT_PUBLIC_APP_URL: "http://localhost:3000",
             STRIPE_SECRET_KEY: "",
+            BETTER_AUTH_SECRET:
+              process.env.BETTER_AUTH_SECRET ?? "integration-tests-only-secret-0123456789abcdef",
+            BETTER_AUTH_URL: "http://localhost:3000",
+            DEMO_MODE: "",
+            CRON_SECRET: "",
           },
           // Tests share one database; files run sequentially, tests inside a
           // file may still fire concurrent queries on purpose.

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { publicBookingSchema } from "@/lib/validation";
 import { AppError } from "@/server/errors";
 import { clientIp, errorResponse, parseOrThrow } from "@/server/http";
+import { drainOutboxAfterResponse } from "@/server/outbox/drain";
 import { enforceRateLimit, RATE_LIMITS } from "@/server/rate-limit";
 import { createPublicBooking } from "@/server/services/bookings";
 
@@ -25,6 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ org
     }
     const input = parseOrThrow(publicBookingSchema, body);
     const result = await createPublicBooking(slug, input);
+    drainOutboxAfterResponse();
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     return errorResponse(err);
