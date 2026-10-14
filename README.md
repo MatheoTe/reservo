@@ -29,20 +29,35 @@ are guaranteed by the database instead of hoped for in application code.
 
 ## Screenshots
 
-> _Placeholders. Capture these from the seeded demo (`npm run seed`) and drop them in
-> `docs/screenshots/`:_
+All data below comes from the seeded demo (`npm run seed`): fictional businesses, staff and customers.
 
-1. **Public booking page** - `/b/glow-studio` with a service selected and the slot grid visible
-   (ideally with the "Showing your time / switch" time-zone pill, using a browser in another zone).
-2. **Slot conflict recovery** - the toast after two tabs try to book the same slot.
-3. **Fake/Stripe checkout** - deposit checkout for "Color & Gloss".
-4. **Booking confirmation** - `/b/glow-studio/bookings/<token>` ("You're booked!").
-5. **Dashboard overview** - `/app/glow-studio` with today's agenda and stats.
-6. **Week calendar** - `/app/glow-studio/calendar` with overlapping bookings in lanes and a staff filter.
-7. **Team & working hours** - `/app/glow-studio/team` (roles, invitations, split shifts with breaks).
-8. **Settings + audit log** - `/app/glow-studio/settings`.
-9. **Mailpit** - `http://localhost:8025` showing a confirmation email.
-10. **CI run** - the green GitHub Actions summary (quality, integration, E2E).
+![Week calendar with overlapping bookings in lanes and a staff filter](docs/screenshots/week-calendar.jpg)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/public-booking-page.jpg" width="100%" alt="Public booking page"><br><sub><b>Public booking page.</b> Service, staff, date and time, shown in the visitor's zone with a one-click switch.</sub></td>
+    <td width="50%"><img src="docs/screenshots/slot-conflict.jpg" width="100%" alt="Slot conflict recovery"><br><sub><b>Lost race.</b> Two tabs booked the same slot: the second gets a 409, a toast and fresh availability.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/deposit-checkout.jpg" width="100%" alt="Deposit checkout"><br><sub><b>Deposit checkout.</b> The slot is held until payment; locally the signed fake provider stands in for Stripe.</sub></td>
+    <td width="50%"><img src="docs/screenshots/booking-confirmed.jpg" width="100%" alt="Booking confirmation"><br><sub><b>Confirmation.</b> Confirmed by the payment webhook, with a self-service cancel link.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/dashboard-overview.jpg" width="100%" alt="Dashboard overview"><br><sub><b>Overview.</b> Today's agenda, the next two weeks and the week's numbers.</sub></td>
+    <td width="50%"><img src="docs/screenshots/bookings.jpg" width="100%" alt="Bookings list"><br><sub><b>Bookings.</b> Upcoming, past and cancelled, in the business's time zone.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/customer-history.jpg" width="100%" alt="Customer history"><br><sub><b>Customer.</b> Booking history and private notes.</sub></td>
+    <td width="50%"><img src="docs/screenshots/services.jpg" width="100%" alt="Services"><br><sub><b>Services.</b> Duration, price, deposit, cleanup buffers and who performs each one.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/team-hours.jpg" width="100%" alt="Team and working hours"><br><sub><b>Team.</b> Roles, invitations and weekly hours split by breaks.</sub></td>
+    <td width="50%"><img src="docs/screenshots/settings-audit-log.jpg" width="100%" alt="Settings and audit log"><br><sub><b>Settings.</b> Booking rules, holidays, billing and the append-only audit log.</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/ci-run.jpg" width="100%" alt="CI run"><br><sub><b>CI.</b> Typecheck, lint and unit tests, integration tests on real Postgres, build and Playwright E2E.</sub></td>
+  </tr>
+</table>
 
 ---
 
