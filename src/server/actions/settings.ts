@@ -10,7 +10,7 @@ import { isoDateSchema, orgSettingsSchema } from "@/lib/validation";
 
 import { audit } from "../audit";
 import { getPaymentProvider } from "../payments";
-import { FakePaymentProvider } from "../payments/fake";
+import { isFakeProvider } from "../payments/fake";
 import { applyPaymentEvent } from "../payments/webhooks";
 import { addHoliday } from "../services/schedule";
 import { type ActionResult, runOrgAction } from "./run";
@@ -54,7 +54,7 @@ export async function startUpgradeAction(orgSlug: string): Promise<ActionResult>
  */
 export async function completeFakeUpgradeAction(orgSlug: string, sessionId: string): Promise<ActionResult> {
   const provider = getPaymentProvider();
-  if (!(provider instanceof FakePaymentProvider)) return { ok: false, error: { code: "FORBIDDEN", message: "Not available." } };
+  if (!isFakeProvider(provider)) return { ok: false, error: { code: "FORBIDDEN", message: "Not available." } };
   const result = await runOrgAction(orgSlug, "billing:manage", z.string().min(10), sessionId, async ({ actor }) => actor.orgId);
   if (!result.ok) return result;
   const { body, signature } = provider.sign({

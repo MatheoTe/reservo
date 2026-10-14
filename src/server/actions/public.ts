@@ -11,7 +11,7 @@ import { orgIdBySlug, withTenant } from "../db/tenant";
 import { AppError, notFound } from "../errors";
 import { clientIp } from "../http";
 import { getPaymentProvider } from "../payments";
-import { FakePaymentProvider } from "../payments/fake";
+import { isFakeProvider } from "../payments/fake";
 import { handleWebhook } from "../payments/webhooks";
 import { enforceRateLimit } from "../rate-limit";
 import { cancelBooking, findBookingByToken } from "../services/bookings";
@@ -45,7 +45,7 @@ export async function payFakeCheckoutAction(orgSlug: string, bookingId: string):
   let accessToken: string;
   try {
     const provider = getPaymentProvider();
-    if (!(provider instanceof FakePaymentProvider)) throw new AppError("NOT_FOUND", "Not available.");
+    if (!isFakeProvider(provider)) throw new AppError("NOT_FOUND", "Not available.");
     const id = z.uuid().parse(bookingId);
     const orgId = await orgIdBySlug(orgSlug);
     if (!orgId) throw notFound("Booking");

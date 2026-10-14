@@ -78,3 +78,12 @@ export class FakePaymentProvider implements PaymentProvider {
     return { body, signature: signPayload(body, this.webhookSecret) };
   }
 }
+
+/**
+ * Type guard by name, not `instanceof`: Next.js may bundle this module into
+ * several server chunks, so the singleton's class identity can differ from the
+ * one imported by the caller.
+ */
+export function isFakeProvider(provider: PaymentProvider): provider is FakePaymentProvider {
+  return provider.name === "fake";
+}
