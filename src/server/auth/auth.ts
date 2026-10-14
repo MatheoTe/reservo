@@ -18,7 +18,12 @@ function createAuth() {
     baseURL: config.BETTER_AUTH_URL,
     database: drizzleAdapter(getDb(), {
       provider: "pg",
-      schema: { user: authUsers, session: authSessions, account: authAccounts, verification: authVerifications },
+      schema: {
+        user: authUsers,
+        session: authSessions,
+        account: authAccounts,
+        verification: authVerifications,
+      },
     }),
     emailAndPassword: {
       enabled: true,
@@ -35,7 +40,10 @@ function createAuth() {
       enabled: true,
       window: 60,
       max: 30,
-      customRules: { "/sign-in/email": { window: 60, max: 10 }, "/sign-in/magic-link": { window: 60, max: 5 } },
+      customRules: {
+        "/sign-in/email": { window: 60, max: 10 },
+        "/sign-in/magic-link": { window: 60, max: 5 },
+      },
     },
     plugins: [
       magicLink({

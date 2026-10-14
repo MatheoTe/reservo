@@ -62,8 +62,13 @@ export function OnboardingForm({ firstName }: { firstName: string }) {
               }}
             />
           </Field>
-          <Field label="Booking page URL" htmlFor="slug" error={fieldErrors.slug} hint="Lowercase letters, numbers and dashes.">
-            <div className="flex items-center rounded-md border border-input bg-muted/50 pl-3 text-sm text-muted-foreground shadow-xs">
+          <Field
+            label="Booking page URL"
+            htmlFor="slug"
+            error={fieldErrors.slug}
+            hint="Lowercase letters, numbers and dashes."
+          >
+            <div className="border-input bg-muted/50 text-muted-foreground flex items-center rounded-md border pl-3 text-sm shadow-xs">
               <span className="whitespace-nowrap">reservo.app/b/</span>
               <Input
                 id="slug"
@@ -79,8 +84,18 @@ export function OnboardingForm({ firstName }: { firstName: string }) {
             </div>
           </Field>
           <div className="grid gap-5 sm:grid-cols-[1fr_120px]">
-            <Field label="Time zone" htmlFor="timeZone" error={fieldErrors.timeZone} hint="Your opening hours are interpreted in this zone.">
-              <NativeSelect id="timeZone" name="timeZone" value={timeZone} onChange={(e) => setPickedZone(e.target.value)}>
+            <Field
+              label="Time zone"
+              htmlFor="timeZone"
+              error={fieldErrors.timeZone}
+              hint="Your opening hours are interpreted in this zone."
+            >
+              <NativeSelect
+                id="timeZone"
+                name="timeZone"
+                value={timeZone}
+                onChange={(e) => setPickedZone(e.target.value)}
+              >
                 {zones.map((z) => (
                   <option key={z} value={z}>
                     {z.replaceAll("_", " ")}

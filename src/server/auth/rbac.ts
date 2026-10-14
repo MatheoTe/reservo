@@ -21,7 +21,12 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number];
 
-const STAFF: Permission[] = ["bookings:read", "bookings:write:own", "customers:read", "schedule:manage:own"];
+const STAFF: Permission[] = [
+  "bookings:read",
+  "bookings:write:own",
+  "customers:read",
+  "schedule:manage:own",
+];
 
 const ADMIN: Permission[] = [
   ...STAFF,
@@ -54,7 +59,11 @@ const RANK: Record<MemberRole, number> = { staff: 0, admin: 1, owner: 2 };
  *  - admins manage staff and other admins, but can't touch owners or create them
  *  - staff can't manage roles at all
  */
-export function canAssignRole(actor: MemberRole, targetCurrent: MemberRole | null, next: MemberRole): boolean {
+export function canAssignRole(
+  actor: MemberRole,
+  targetCurrent: MemberRole | null,
+  next: MemberRole,
+): boolean {
   if (!can(actor, "team:manage")) return false;
   if (actor === "owner") return true;
   if (next === "owner") return false;

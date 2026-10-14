@@ -22,10 +22,23 @@ async function loadOverview(ctx: OrgContext) {
 
   return readInOrg(ctx, async (tx) => {
     const [todays, weekBookings, upcoming, customers] = await Promise.all([
-      listBookings(tx, { from: todayRange.start, to: todayRange.end, staffId, statuses: ["confirmed", "pending_payment"] }),
+      listBookings(tx, {
+        from: todayRange.start,
+        to: todayRange.end,
+        staffId,
+        statuses: ["confirmed", "pending_payment"],
+      }),
       listBookings(tx, { from: week.start, to: week.end, staffId, statuses: ["confirmed"] }),
-      listBookings(tx, { from: now, to: new Date(now.getTime() + 14 * 86_400_000), staffId, statuses: ["confirmed", "pending_payment"], limit: 6 }),
-      ctx.can("customers:read") ? listCustomers(tx, { limit: 1000 }).then((c) => c.length) : Promise.resolve(null),
+      listBookings(tx, {
+        from: now,
+        to: new Date(now.getTime() + 14 * 86_400_000),
+        staffId,
+        statuses: ["confirmed", "pending_payment"],
+        limit: 6,
+      }),
+      ctx.can("customers:read")
+        ? listCustomers(tx, { limit: 1000 }).then((c) => c.length)
+        : Promise.resolve(null),
     ]);
     return { todays, weekBookings, upcoming, customers };
   });
@@ -54,7 +67,11 @@ export default async function OverviewPage({ params }: { params: Promise<{ org: 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Appointments today" value={todays.length} />
         <Stat label="Booked this week" value={weekBookings.length} />
-        <Stat label="Booked revenue this week" value={formatMoney(weekRevenue, ctx.org.currency)} hint="Confirmed bookings" />
+        <Stat
+          label="Booked revenue this week"
+          value={formatMoney(weekRevenue, ctx.org.currency)}
+          hint="Confirmed bookings"
+        />
         <Stat label="Customers" value={customers ?? "-"} />
       </div>
 
@@ -66,7 +83,11 @@ export default async function OverviewPage({ params }: { params: Promise<{ org: 
           </CardHeader>
           <CardContent>
             {todays.length === 0 ? (
-              <EmptyState icon={<Clock />} title="Nothing scheduled today" description="New bookings from your public page show up here instantly." />
+              <EmptyState
+                icon={<Clock />}
+                title="Nothing scheduled today"
+                description="New bookings from your public page show up here instantly."
+              />
             ) : (
               <ul className="grid gap-2">
                 {todays.map((b) => (
@@ -74,10 +95,13 @@ export default async function OverviewPage({ params }: { params: Promise<{ org: 
                     <span className="w-24 text-sm font-medium tabular-nums">
                       {formatTime(b.startsAt, tz)}-{formatTime(b.endsAt, tz)}
                     </span>
-                    <span className="h-8 w-1 rounded-full" style={{ backgroundColor: b.staffColor }} />
+                    <span
+                      className="h-8 w-1 rounded-full"
+                      style={{ backgroundColor: b.staffColor }}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{b.customerName}</p>
-                      <p className="truncate text-xs text-muted-foreground">
+                      <p className="text-muted-foreground truncate text-xs">
                         {b.serviceName} · {b.staffName}
                       </p>
                     </div>
@@ -96,7 +120,9 @@ export default async function OverviewPage({ params }: { params: Promise<{ org: 
           </CardHeader>
           <CardContent>
             {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming bookings yet. Share your booking page to get started.</p>
+              <p className="text-muted-foreground text-sm">
+                No upcoming bookings yet. Share your booking page to get started.
+              </p>
             ) : (
               <ul className="grid gap-3">
                 {upcoming.map((b) => (
@@ -104,9 +130,14 @@ export default async function OverviewPage({ params }: { params: Promise<{ org: 
                     <Avatar name={b.customerName} color={b.staffColor} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{b.customerName}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {b.startsAt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: tz })} ·{" "}
-                        {formatTime(b.startsAt, tz)} · {b.serviceName}
+                      <p className="text-muted-foreground truncate text-xs">
+                        {b.startsAt.toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          timeZone: tz,
+                        })}{" "}
+                        · {formatTime(b.startsAt, tz)} · {b.serviceName}
                       </p>
                     </div>
                   </li>

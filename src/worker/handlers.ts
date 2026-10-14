@@ -1,6 +1,15 @@
 import { eq } from "drizzle-orm";
 
-import { authUsers, bookings, customers, invitations, organizations, payments, services, staffMembers } from "@/db/schema";
+import {
+  authUsers,
+  bookings,
+  customers,
+  invitations,
+  organizations,
+  payments,
+  services,
+  staffMembers,
+} from "@/db/schema";
 import type { Tx } from "@/server/db/client";
 import { withTenant } from "@/server/db/tenant";
 import { formatDateTime } from "@/server/format";
@@ -48,23 +57,34 @@ async function loadBooking(tx: Tx, bookingId: string, appUrl: string) {
   return { booking: row.booking, email };
 }
 
-export function createHandlers(deps: { mailer: Mailer; payments: PaymentProvider; appUrl: string; now?: () => Date }): OutboxHandlers {
+export function createHandlers(deps: {
+  mailer: Mailer;
+  payments: PaymentProvider;
+  appUrl: string;
+  now?: () => Date;
+}): OutboxHandlers {
   const now = deps.now ?? (() => new Date());
   return {
     "booking.confirmed": async ({ bookingId }, msg) => {
-      const data = await withTenant({ orgId: msg.orgId }, (tx) => loadBooking(tx, bookingId, deps.appUrl));
+      const data = await withTenant({ orgId: msg.orgId }, (tx) =>
+        loadBooking(tx, bookingId, deps.appUrl),
+      );
       if (data.booking.status !== "confirmed") return; // cancelled before we got to it
       await deps.mailer.send(bookingConfirmedEmail(data.email));
     },
 
     "booking.reminder": async ({ bookingId }, msg) => {
-      const data = await withTenant({ orgId: msg.orgId }, (tx) => loadBooking(tx, bookingId, deps.appUrl));
+      const data = await withTenant({ orgId: msg.orgId }, (tx) =>
+        loadBooking(tx, bookingId, deps.appUrl),
+      );
       if (data.booking.status !== "confirmed" || data.booking.startsAt <= now()) return;
       await deps.mailer.send(bookingReminderEmail(data.email));
     },
 
     "booking.cancelled": async ({ bookingId, cancelledBy }, msg) => {
-      const data = await withTenant({ orgId: msg.orgId }, (tx) => loadBooking(tx, bookingId, deps.appUrl));
+      const data = await withTenant({ orgId: msg.orgId }, (tx) =>
+        loadBooking(tx, bookingId, deps.appUrl),
+      );
       await deps.mailer.send(bookingCancelledEmail(data.email, cancelledBy));
     },
 
@@ -72,7 +92,11 @@ export function createHandlers(deps: { mailer: Mailer; payments: PaymentProvider
       if (!token) return; // already delivered and scrubbed
       const row = await withTenant({ orgId: msg.orgId }, async (tx) => {
         const [r] = await tx
-          .select({ invitation: invitations, orgName: organizations.name, inviterName: authUsers.name })
+          .select({
+            invitation: invitations,
+            orgName: organizations.name,
+            inviterName: authUsers.name,
+          })
           .from(invitations)
           .innerJoin(organizations, eq(organizations.id, invitations.orgId))
           .leftJoin(authUsers, eq(authUsers.id, invitations.invitedBy))

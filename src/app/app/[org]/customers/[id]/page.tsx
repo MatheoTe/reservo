@@ -14,7 +14,11 @@ import { getCustomer } from "@/server/services/customers";
 
 import { CustomerNotes } from "./notes";
 
-export default async function CustomerPage({ params }: { params: Promise<{ org: string; id: string }> }) {
+export default async function CustomerPage({
+  params,
+}: {
+  params: Promise<{ org: string; id: string }>;
+}) {
   const { org: slug, id } = await params;
   const ctx = await getOrgContext(slug);
   if (!ctx.can("customers:read") || !z.uuid().safeParse(id).success) notFound();
@@ -26,14 +30,17 @@ export default async function CustomerPage({ params }: { params: Promise<{ org: 
 
   return (
     <>
-      <Link href={`/app/${slug}/customers`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        href={`/app/${slug}/customers`}
+        className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1 text-sm"
+      >
         <ArrowLeft className="size-4" /> Customers
       </Link>
       <div className="mb-6 flex items-center gap-4">
         <Avatar name={customer.name} className="size-12 text-base" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {customer.email}
             {customer.phone ? ` · ${customer.phone}` : ""}
           </p>
@@ -56,12 +63,16 @@ export default async function CustomerPage({ params }: { params: Promise<{ org: 
             <TBody>
               {history.map((b) => (
                 <TR key={b.id}>
-                  <TD className="whitespace-nowrap">{formatDateTime(b.startsAt, ctx.org.timeZone)}</TD>
+                  <TD className="whitespace-nowrap">
+                    {formatDateTime(b.startsAt, ctx.org.timeZone)}
+                  </TD>
                   <TD>{b.serviceName}</TD>
                   <TD>
                     <BookingStatusBadge status={b.status} />
                   </TD>
-                  <TD className="text-right tabular-nums">{formatMoney(b.priceCents, ctx.org.currency)}</TD>
+                  <TD className="text-right tabular-nums">
+                    {formatMoney(b.priceCents, ctx.org.currency)}
+                  </TD>
                 </TR>
               ))}
             </TBody>
@@ -72,7 +83,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ org: 
             <CardTitle>Private notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <CustomerNotes orgSlug={slug} customerId={customer.id} initial={customer.notes ?? ""} canEdit={ctx.can("customers:write")} />
+            <CustomerNotes
+              orgSlug={slug}
+              customerId={customer.id}
+              initial={customer.notes ?? ""}
+              canEdit={ctx.can("customers:write")}
+            />
           </CardContent>
         </Card>
       </div>

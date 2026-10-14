@@ -22,7 +22,12 @@ export interface Actor {
   orgId: string;
 }
 
-export async function inviteMember(tx: Tx, actor: Actor, input: { email: string; role: "admin" | "staff" }, now = new Date()) {
+export async function inviteMember(
+  tx: Tx,
+  actor: Actor,
+  input: { email: string; role: "admin" | "staff" },
+  now = new Date(),
+) {
   if (!canAssignRole(actor.role, null, input.role)) throw forbidden();
   const [existing] = await tx
     .select({ id: memberships.id })
@@ -57,14 +62,31 @@ export async function inviteMember(tx: Tx, actor: Actor, input: { email: string;
   return { invitation: invitation!, token };
 }
 
-export async function revokeInvitation(tx: Tx, actor: Actor, invitationId: string, now = new Date()) {
+export async function revokeInvitation(
+  tx: Tx,
+  actor: Actor,
+  invitationId: string,
+  now = new Date(),
+) {
   const [row] = await tx
     .update(invitations)
     .set({ revokedAt: now })
-    .where(and(eq(invitations.id, invitationId), isNull(invitations.acceptedAt), isNull(invitations.revokedAt)))
+    .where(
+      and(
+        eq(invitations.id, invitationId),
+        isNull(invitations.acceptedAt),
+        isNull(invitations.revokedAt),
+      ),
+    )
     .returning({ id: invitations.id });
   if (!row) throw notFound("Invitation");
-  await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: "invitation.revoked", targetType: "invitation", targetId: row.id });
+  await audit(tx, {
+    orgId: actor.orgId,
+    actorUserId: actor.userId,
+    action: "invitation.revoked",
+    targetType: "invitation",
+    targetId: row.id,
+  });
 }
 
 /**
@@ -77,24 +99,38 @@ export async function acceptInvitation(
   user: { id: string; email: string; name: string },
 ): Promise<{ orgId: string }> {
   const tokenHash = hashToken(token);
-  const rows = await getDb().execute<{ org_id: string | null }>(sql`select app.invitation_org_id(${tokenHash}) as org_id`);
+  const rows = await getDb().execute<{ org_id: string | null }>(
+    sql`select app.invitation_org_id(${tokenHash}) as org_id`,
+  );
   const orgId = rows[0]?.org_id;
   if (!orgId) throw new AppError("NOT_FOUND", "This invitation is invalid or has expired.");
 
   return withTenant({ orgId, userId: user.id }, async (tx) => {
-    const [invitation] = await tx.select().from(invitations).where(eq(invitations.tokenHash, tokenHash)).for("update");
+    const [invitation] = await tx
+      .select()
+      .from(invitations)
+      .where(eq(invitations.tokenHash, tokenHash))
+      .for("update");
     if (!invitation || invitation.acceptedAt || invitation.revokedAt) {
       throw new AppError("NOT_FOUND", "This invitation is invalid or has expired.");
     }
     if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
-      throw forbidden(`This invitation was sent to ${invitation.email}. Sign in with that address to accept it.`);
+      throw forbidden(
+        `This invitation was sent to ${invitation.email}. Sign in with that address to accept it.`,
+      );
     }
-    await tx.insert(memberships).values({ orgId, userId: user.id, role: invitation.role }).onConflictDoNothing();
+    await tx
+      .insert(memberships)
+      .values({ orgId, userId: user.id, role: invitation.role })
+      .onConflictDoNothing();
     await tx
       .insert(staffMembers)
       .values({ orgId, userId: user.id, displayName: user.name, email: user.email })
       .onConflictDoNothing();
-    await tx.update(invitations).set({ acceptedAt: new Date() }).where(eq(invitations.id, invitation.id));
+    await tx
+      .update(invitations)
+      .set({ acceptedAt: new Date() })
+      .where(eq(invitations.id, invitation.id));
     await audit(tx, {
       orgId,
       actorUserId: user.id,
@@ -107,8 +143,16 @@ export async function acceptInvitation(
   });
 }
 
-export async function changeRole(tx: Tx, actor: Actor, input: { membershipId: string; role: MemberRole }) {
-  const [target] = await tx.select().from(memberships).where(eq(memberships.id, input.membershipId)).for("update");
+export async function changeRole(
+  tx: Tx,
+  actor: Actor,
+  input: { membershipId: string; role: MemberRole },
+) {
+  const [target] = await tx
+    .select()
+    .from(memberships)
+    .where(eq(memberships.id, input.membershipId))
+    .for("update");
   if (!target) throw notFound("Member");
   if (!canAssignRole(actor.role, target.role, input.role)) throw forbidden();
   if (target.role === "owner" && input.role !== "owner") await assertNotLastOwner(tx);
@@ -124,19 +168,35 @@ export async function changeRole(tx: Tx, actor: Actor, input: { membershipId: st
 }
 
 export async function removeMember(tx: Tx, actor: Actor, membershipId: string) {
-  const [target] = await tx.select().from(memberships).where(eq(memberships.id, membershipId)).for("update");
+  const [target] = await tx
+    .select()
+    .from(memberships)
+    .where(eq(memberships.id, membershipId))
+    .for("update");
   if (!target) throw notFound("Member");
   // Removing someone requires being allowed to (re)assign their current role.
   if (!canAssignRole(actor.role, target.role, target.role)) throw forbidden();
   if (target.role === "owner") await assertNotLastOwner(tx);
   await tx.delete(memberships).where(eq(memberships.id, target.id));
   // Keep their staff row (bookings reference it) but make it unbookable.
-  await tx.update(staffMembers).set({ active: false, userId: null }).where(eq(staffMembers.userId, target.userId));
-  await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: "member.removed", targetType: "user", targetId: target.userId });
+  await tx
+    .update(staffMembers)
+    .set({ active: false, userId: null })
+    .where(eq(staffMembers.userId, target.userId));
+  await audit(tx, {
+    orgId: actor.orgId,
+    actorUserId: actor.userId,
+    action: "member.removed",
+    targetType: "user",
+    targetId: target.userId,
+  });
 }
 
 async function assertNotLastOwner(tx: Tx) {
-  const [row] = await tx.select({ n: sql<number>`count(*)::int` }).from(memberships).where(eq(memberships.role, "owner"));
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(memberships)
+    .where(eq(memberships.role, "owner"));
   if ((row?.n ?? 0) <= 1) throw conflict("An organization needs at least one owner.");
 }
 
@@ -156,7 +216,13 @@ export async function listTeam(tx: Tx) {
   const pending = await tx
     .select()
     .from(invitations)
-    .where(and(isNull(invitations.acceptedAt), isNull(invitations.revokedAt), sql`${invitations.expiresAt} > now()`))
+    .where(
+      and(
+        isNull(invitations.acceptedAt),
+        isNull(invitations.revokedAt),
+        sql`${invitations.expiresAt} > now()`,
+      ),
+    )
     .orderBy(asc(invitations.createdAt));
   return { members, pending };
 }

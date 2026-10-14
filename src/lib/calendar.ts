@@ -24,7 +24,11 @@ export function startOfWeek(date: Temporal.PlainDate): Temporal.PlainDate {
 }
 
 /** [start, end) instants covering whole local days. */
-export function localRange(from: Temporal.PlainDate, daysCount: number, timeZone: string): { start: Date; end: Date } {
+export function localRange(
+  from: Temporal.PlainDate,
+  daysCount: number,
+  timeZone: string,
+): { start: Date; end: Date } {
   return {
     start: new Date(from.toZonedDateTime(timeZone).epochMilliseconds),
     end: new Date(from.add({ days: daysCount }).toZonedDateTime(timeZone).epochMilliseconds),
@@ -38,10 +42,16 @@ export function wallMinutes(date: Date, timeZone: string): number {
 }
 
 export function localDateOf(date: Date, timeZone: string): string {
-  return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(timeZone).toPlainDate().toString();
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+    .toZonedDateTimeISO(timeZone)
+    .toPlainDate()
+    .toString();
 }
 
-export function formatDay(date: Temporal.PlainDate, locale = "en-US"): { weekday: string; day: string; month: string } {
+export function formatDay(
+  date: Temporal.PlainDate,
+  locale = "en-US",
+): { weekday: string; day: string; month: string } {
   const js = new Date(Date.UTC(date.year, date.month - 1, date.day));
   return {
     weekday: js.toLocaleDateString(locale, { weekday: "short", timeZone: "UTC" }),
@@ -50,10 +60,19 @@ export function formatDay(date: Temporal.PlainDate, locale = "en-US"): { weekday
   };
 }
 
-export function formatRangeLabel(start: Temporal.PlainDate, end: Temporal.PlainDate, locale = "en-US"): string {
+export function formatRangeLabel(
+  start: Temporal.PlainDate,
+  end: Temporal.PlainDate,
+  locale = "en-US",
+): string {
   const a = new Date(Date.UTC(start.year, start.month - 1, start.day));
   const b = new Date(Date.UTC(end.year, end.month - 1, end.day));
   const fmt = (d: Date, withYear: boolean) =>
-    d.toLocaleDateString(locale, { month: "short", day: "numeric", year: withYear ? "numeric" : undefined, timeZone: "UTC" });
+    d.toLocaleDateString(locale, {
+      month: "short",
+      day: "numeric",
+      year: withYear ? "numeric" : undefined,
+      timeZone: "UTC",
+    });
   return `${fmt(a, start.year !== end.year)} - ${fmt(b, true)}`;
 }

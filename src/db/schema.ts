@@ -153,7 +153,10 @@ export const memberships = pgTable(
     role: memberRoleEnum("role").notNull(),
     createdAt: createdAt(),
   },
-  (t) => [unique("memberships_org_user_key").on(t.orgId, t.userId), index("memberships_user_idx").on(t.userId)],
+  (t) => [
+    unique("memberships_org_user_key").on(t.orgId, t.userId),
+    index("memberships_user_idx").on(t.userId),
+  ],
 );
 
 export const invitations = pgTable(
@@ -199,7 +202,10 @@ export const staffMembers = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [unique("staff_members_org_id_key").on(t.orgId, t.id), uniqueIndex("staff_members_org_user_key").on(t.orgId, t.userId)],
+  (t) => [
+    unique("staff_members_org_id_key").on(t.orgId, t.id),
+    uniqueIndex("staff_members_org_user_key").on(t.orgId, t.userId),
+  ],
 );
 
 export const services = pgTable(
@@ -223,8 +229,14 @@ export const services = pgTable(
   (t) => [
     unique("services_org_id_key").on(t.orgId, t.id),
     check("services_duration", sql`${t.durationMinutes} between 5 and 720`),
-    check("services_money", sql`${t.priceCents} >= 0 and ${t.depositCents} >= 0 and ${t.depositCents} <= ${t.priceCents}`),
-    check("services_buffers", sql`${t.bufferBeforeMinutes} between 0 and 240 and ${t.bufferAfterMinutes} between 0 and 240`),
+    check(
+      "services_money",
+      sql`${t.priceCents} >= 0 and ${t.depositCents} >= 0 and ${t.depositCents} <= ${t.priceCents}`,
+    ),
+    check(
+      "services_buffers",
+      sql`${t.bufferBeforeMinutes} between 0 and 240 and ${t.bufferAfterMinutes} between 0 and 240`,
+    ),
   ],
 );
 
@@ -237,8 +249,14 @@ export const staffServices = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.staffId, t.serviceId] }),
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }).onDelete("cascade"),
-    foreignKey({ columns: [t.orgId, t.serviceId], foreignColumns: [services.orgId, services.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.serviceId],
+      foreignColumns: [services.orgId, services.id],
+    }).onDelete("cascade"),
     index("staff_services_service_idx").on(t.serviceId),
   ],
 );
@@ -255,7 +273,10 @@ export const workingHours = pgTable(
     endTime: time("end_time").notNull(),
   },
   (t) => [
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }).onDelete("cascade"),
     check("working_hours_weekday", sql`${t.weekday} between 1 and 7`),
     // `time` accepts '24:00', so end-of-day windows still satisfy start < end.
     check("working_hours_order", sql`${t.startTime} < ${t.endTime}`),
@@ -274,7 +295,10 @@ export const breaks = pgTable(
     endTime: time("end_time").notNull(),
   },
   (t) => [
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }).onDelete("cascade"),
     check("breaks_weekday", sql`${t.weekday} between 1 and 7`),
     check("breaks_order", sql`${t.startTime} < ${t.endTime}`),
     index("breaks_staff_idx").on(t.staffId),
@@ -295,7 +319,10 @@ export const dateOverrides = pgTable(
     note: text("note"),
   },
   (t) => [
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }).onDelete("cascade"),
     check("date_overrides_shape", sql`(${t.startTime} is null) = (${t.endTime} is null)`),
     index("date_overrides_staff_date_idx").on(t.staffId, t.date),
   ],
@@ -316,7 +343,10 @@ export const timeOff = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }).onDelete("cascade"),
     check("time_off_order", sql`${t.startsAt} < ${t.endsAt}`),
     index("time_off_org_range_idx").on(t.orgId, t.startsAt),
   ],
@@ -361,7 +391,12 @@ export const customers = pgTable(
   ],
 );
 
-export const bookingStatusEnum = pgEnum("booking_status", ["pending_payment", "confirmed", "cancelled", "expired"]);
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "pending_payment",
+  "confirmed",
+  "cancelled",
+  "expired",
+]);
 export const bookingSourceEnum = pgEnum("booking_source", ["public", "dashboard"]);
 
 export const bookings = pgTable(
@@ -398,11 +433,20 @@ export const bookings = pgTable(
   },
   (t) => [
     unique("bookings_org_id_key").on(t.orgId, t.id),
-    foreignKey({ columns: [t.orgId, t.staffId], foreignColumns: [staffMembers.orgId, staffMembers.id] }),
+    foreignKey({
+      columns: [t.orgId, t.staffId],
+      foreignColumns: [staffMembers.orgId, staffMembers.id],
+    }),
     foreignKey({ columns: [t.orgId, t.serviceId], foreignColumns: [services.orgId, services.id] }),
-    foreignKey({ columns: [t.orgId, t.customerId], foreignColumns: [customers.orgId, customers.id] }),
+    foreignKey({
+      columns: [t.orgId, t.customerId],
+      foreignColumns: [customers.orgId, customers.id],
+    }),
     check("bookings_order", sql`${t.startsAt} < ${t.endsAt}`),
-    check("bookings_blocked_covers", sql`${t.blockedFrom} <= ${t.startsAt} and ${t.blockedUntil} >= ${t.endsAt}`),
+    check(
+      "bookings_blocked_covers",
+      sql`${t.blockedFrom} <= ${t.startsAt} and ${t.blockedUntil} >= ${t.endsAt}`,
+    ),
     check("bookings_hold", sql`${t.status} <> 'pending_payment' or ${t.holdExpiresAt} is not null`),
     index("bookings_org_starts_idx").on(t.orgId, t.startsAt),
     index("bookings_customer_idx").on(t.customerId),
@@ -410,7 +454,12 @@ export const bookings = pgTable(
   ],
 );
 
-export const paymentStatusEnum = pgEnum("payment_status", ["pending", "succeeded", "failed", "refunded"]);
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "succeeded",
+  "failed",
+  "refunded",
+]);
 
 export const payments = pgTable(
   "payments",
@@ -430,7 +479,10 @@ export const payments = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    foreignKey({ columns: [t.orgId, t.bookingId], foreignColumns: [bookings.orgId, bookings.id] }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.orgId, t.bookingId],
+      foreignColumns: [bookings.orgId, bookings.id],
+    }).onDelete("cascade"),
     uniqueIndex("payments_provider_external_key").on(t.provider, t.externalId),
     index("payments_booking_idx").on(t.bookingId),
   ],
@@ -485,7 +537,9 @@ export const outbox = pgTable(
   },
   (t) => [
     uniqueIndex("outbox_dedupe_key").on(t.orgId, t.dedupeKey),
-    index("outbox_ready_idx").on(t.availableAt).where(sql`${t.status} in ('pending', 'processing')`),
+    index("outbox_ready_idx")
+      .on(t.availableAt)
+      .where(sql`${t.status} in ('pending', 'processing')`),
   ],
 );
 

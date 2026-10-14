@@ -9,7 +9,11 @@ import { WebhookSignatureError } from "./types";
  */
 export const SIGNATURE_TOLERANCE_SECONDS = 300;
 
-export function signPayload(rawBody: string, secret: string, timestampSeconds = Math.floor(Date.now() / 1000)): string {
+export function signPayload(
+  rawBody: string,
+  secret: string,
+  timestampSeconds = Math.floor(Date.now() / 1000),
+): string {
   const mac = createHmac("sha256", secret).update(`${timestampSeconds}.${rawBody}`).digest("hex");
   return `t=${timestampSeconds},v1=${mac}`;
 }
@@ -33,7 +37,10 @@ export function verifySignature(
   if (Math.abs(nowSeconds - t) > SIGNATURE_TOLERANCE_SECONDS) {
     throw new WebhookSignatureError("Signature timestamp outside tolerance (possible replay)");
   }
-  const expected = Buffer.from(createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex"), "hex");
+  const expected = Buffer.from(
+    createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex"),
+    "hex",
+  );
   const received = Buffer.from(v1, "hex");
   if (received.length !== expected.length || !timingSafeEqual(received, expected)) {
     throw new WebhookSignatureError();

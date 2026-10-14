@@ -14,22 +14,33 @@ describe("webhook signatures", () => {
 
   it("rejects a tampered body", () => {
     const header = signPayload(body, secret, now);
-    expect(() => verifySignature(body.replace("evt_1", "evt_2"), header, secret, now)).toThrow(WebhookSignatureError);
+    expect(() => verifySignature(body.replace("evt_1", "evt_2"), header, secret, now)).toThrow(
+      WebhookSignatureError,
+    );
   });
 
   it("rejects the wrong secret", () => {
-    expect(() => verifySignature(body, signPayload(body, "other", now), secret, now)).toThrow(WebhookSignatureError);
+    expect(() => verifySignature(body, signPayload(body, "other", now), secret, now)).toThrow(
+      WebhookSignatureError,
+    );
   });
 
   it("rejects replays outside the tolerance window", () => {
-    expect(() => verifySignature(body, signPayload(body, secret, now - 301), secret, now)).toThrow(/tolerance/);
+    expect(() => verifySignature(body, signPayload(body, secret, now - 301), secret, now)).toThrow(
+      /tolerance/,
+    );
   });
 
-  it.each([null, "", "garbage", "t=abc,v1=00", "t=1800000000"])("rejects malformed header %j", (header) => {
-    expect(() => verifySignature(body, header, secret, now)).toThrow(WebhookSignatureError);
-  });
+  it.each([null, "", "garbage", "t=abc,v1=00", "t=1800000000"])(
+    "rejects malformed header %j",
+    (header) => {
+      expect(() => verifySignature(body, header, secret, now)).toThrow(WebhookSignatureError);
+    },
+  );
 
   it("rejects a signature of the wrong length without throwing a crypto error", () => {
-    expect(() => verifySignature(body, `t=${now},v1=abcd`, secret, now)).toThrow(WebhookSignatureError);
+    expect(() => verifySignature(body, `t=${now},v1=abcd`, secret, now)).toThrow(
+      WebhookSignatureError,
+    );
   });
 });

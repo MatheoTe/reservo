@@ -7,7 +7,13 @@ import { withTenant } from "@/server/db/tenant";
 import { loadOrg } from "@/server/services/bookings";
 import { computeAvailability } from "@/server/services/availability";
 
-import { createTestOrg, insertBookingDirect, type TestOrg, tomorrowAt, useCleanDatabase } from "./helpers";
+import {
+  createTestOrg,
+  insertBookingDirect,
+  type TestOrg,
+  tomorrowAt,
+  useCleanDatabase,
+} from "./helpers";
 
 const BA = "America/Argentina/Buenos_Aires";
 
@@ -23,7 +29,13 @@ describe("availability service (DB -> engine)", () => {
   async function slotsTomorrow() {
     return withTenant({ orgId: org.orgId }, async (tx) => {
       const o = await loadOrg(tx, org.orgId);
-      const { slots } = await computeAvailability(tx, { org: o, serviceId: org.serviceId, from: tomorrow(), to: tomorrow(), now: new Date() });
+      const { slots } = await computeAvailability(tx, {
+        org: o,
+        serviceId: org.serviceId,
+        from: tomorrow(),
+        to: tomorrow(),
+        now: new Date(),
+      });
       return slots.map((s) => localTime(s.start, BA));
     });
   }
@@ -48,10 +60,17 @@ describe("availability service (DB -> engine)", () => {
 
   it("respects org-wide holidays and staff time off", async () => {
     await withTenant({ orgId: org.orgId }, (tx) =>
-      tx.insert(timeOff).values({ orgId: org.orgId, staffId: org.ownerStaffId, startsAt: tomorrowAt(9), endsAt: tomorrowAt(12) }),
+      tx.insert(timeOff).values({
+        orgId: org.orgId,
+        staffId: org.ownerStaffId,
+        startsAt: tomorrowAt(9),
+        endsAt: tomorrowAt(12),
+      }),
     );
     expect((await slotsTomorrow())[0]).toBe("12:00");
-    await withTenant({ orgId: org.orgId }, (tx) => tx.insert(holidays).values({ orgId: org.orgId, date: tomorrow(), name: "Holiday" }));
+    await withTenant({ orgId: org.orgId }, (tx) =>
+      tx.insert(holidays).values({ orgId: org.orgId, date: tomorrow(), name: "Holiday" }),
+    );
     expect(await slotsTomorrow()).toEqual([]);
   });
 });

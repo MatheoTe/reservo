@@ -33,7 +33,11 @@ export class AppError extends Error {
   readonly fieldErrors?: FieldErrors;
   readonly retryAfterSeconds?: number;
 
-  constructor(code: ErrorCode, message: string, extra: { fieldErrors?: FieldErrors; retryAfterSeconds?: number; cause?: unknown } = {}) {
+  constructor(
+    code: ErrorCode,
+    message: string,
+    extra: { fieldErrors?: FieldErrors; retryAfterSeconds?: number; cause?: unknown } = {},
+  ) {
     super(message, { cause: extra.cause });
     this.name = "AppError";
     this.code = code;
@@ -47,7 +51,8 @@ export class AppError extends Error {
 }
 
 export const unauthenticated = () => new AppError("UNAUTHENTICATED", "You need to sign in.");
-export const forbidden = (message = "You don't have permission to do that.") => new AppError("FORBIDDEN", message);
+export const forbidden = (message = "You don't have permission to do that.") =>
+  new AppError("FORBIDDEN", message);
 export const notFound = (what = "Resource") => new AppError("NOT_FOUND", `${what} not found.`);
 export const conflict = (message: string) => new AppError("CONFLICT", message);
 export const slotUnavailable = () =>
@@ -73,7 +78,12 @@ interface PgErrorLike {
 export function pgError(err: unknown): PgErrorLike | undefined {
   let current: unknown = err;
   for (let depth = 0; current && depth < 5; depth++) {
-    if (typeof current === "object" && "code" in current && typeof current.code === "string" && /^[0-9A-Z]{5}$/.test(current.code)) {
+    if (
+      typeof current === "object" &&
+      "code" in current &&
+      typeof current.code === "string" &&
+      /^[0-9A-Z]{5}$/.test(current.code)
+    ) {
       return current as PgErrorLike;
     }
     current = (current as { cause?: unknown }).cause;
@@ -83,7 +93,9 @@ export function pgError(err: unknown): PgErrorLike | undefined {
 
 export function isPgError(err: unknown, code: string, constraint?: string): boolean {
   const pg = pgError(err);
-  return !!pg && pg.code === code && (constraint === undefined || pg.constraint_name === constraint);
+  return (
+    !!pg && pg.code === code && (constraint === undefined || pg.constraint_name === constraint)
+  );
 }
 
 /** Normalizes anything thrown into an AppError (unknown errors become INTERNAL). */

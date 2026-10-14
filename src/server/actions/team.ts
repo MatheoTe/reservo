@@ -9,56 +9,101 @@ import { changeRoleSchema, inviteSchema, scheduleSchema, timeOffSchema } from "@
 import { requireUserOrThrow } from "../auth/session";
 import { listUserOrganizations } from "../services/organizations";
 import { addTimeOff, replaceSchedule } from "../services/schedule";
-import { acceptInvitation, changeRole, inviteMember, removeMember, revokeInvitation } from "../services/team";
+import {
+  acceptInvitation,
+  changeRole,
+  inviteMember,
+  removeMember,
+  revokeInvitation,
+} from "../services/team";
 import { type ActionResult, runOrgAction, toActionError } from "./run";
 
 const revalidateTeam = (orgSlug: string) => revalidatePath(`/app/${orgSlug}/team`);
 
 export async function inviteMemberAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "team:manage", inviteSchema, input, async ({ tx, actor, input }) => {
-    await inviteMember(tx, actor, input);
-  });
+  const result = await runOrgAction(
+    orgSlug,
+    "team:manage",
+    inviteSchema,
+    input,
+    async ({ tx, actor, input }) => {
+      await inviteMember(tx, actor, input);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }
 
-export async function revokeInvitationAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "team:manage", z.object({ invitationId: z.uuid() }), input, async ({ tx, actor, input }) => {
-    await revokeInvitation(tx, actor, input.invitationId);
-  });
+export async function revokeInvitationAction(
+  orgSlug: string,
+  input: unknown,
+): Promise<ActionResult> {
+  const result = await runOrgAction(
+    orgSlug,
+    "team:manage",
+    z.object({ invitationId: z.uuid() }),
+    input,
+    async ({ tx, actor, input }) => {
+      await revokeInvitation(tx, actor, input.invitationId);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }
 
 export async function changeRoleAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "team:manage", changeRoleSchema, input, async ({ tx, actor, input }) => {
-    await changeRole(tx, actor, input);
-  });
+  const result = await runOrgAction(
+    orgSlug,
+    "team:manage",
+    changeRoleSchema,
+    input,
+    async ({ tx, actor, input }) => {
+      await changeRole(tx, actor, input);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }
 
 export async function removeMemberAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "team:manage", z.object({ membershipId: z.uuid() }), input, async ({ tx, actor, input }) => {
-    await removeMember(tx, actor, input.membershipId);
-  });
+  const result = await runOrgAction(
+    orgSlug,
+    "team:manage",
+    z.object({ membershipId: z.uuid() }),
+    input,
+    async ({ tx, actor, input }) => {
+      await removeMember(tx, actor, input.membershipId);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }
 
 // Fine-grained (own vs any) checks happen inside the service.
 export async function saveScheduleAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "schedule:manage:own", scheduleSchema, input, async ({ tx, actor, input }) => {
-    await replaceSchedule(tx, actor, input);
-  });
+  const result = await runOrgAction(
+    orgSlug,
+    "schedule:manage:own",
+    scheduleSchema,
+    input,
+    async ({ tx, actor, input }) => {
+      await replaceSchedule(tx, actor, input);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }
 
 export async function addTimeOffAction(orgSlug: string, input: unknown): Promise<ActionResult> {
-  const result = await runOrgAction(orgSlug, "schedule:manage:own", timeOffSchema, input, async ({ tx, actor, input }) => {
-    await addTimeOff(tx, actor, input);
-  });
+  const result = await runOrgAction(
+    orgSlug,
+    "schedule:manage:own",
+    timeOffSchema,
+    input,
+    async ({ tx, actor, input }) => {
+      await addTimeOff(tx, actor, input);
+    },
+  );
   if (result.ok) revalidateTeam(orgSlug);
   return result;
 }

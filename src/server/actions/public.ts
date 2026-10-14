@@ -20,9 +20,15 @@ import { type ActionResult, toActionError } from "./run";
 const tokenSchema = z.string().min(20).max(64);
 
 /** Customer self-service cancellation via the secret link in their email. */
-export async function cancelPublicBookingAction(orgSlug: string, accessToken: string): Promise<ActionResult> {
+export async function cancelPublicBookingAction(
+  orgSlug: string,
+  accessToken: string,
+): Promise<ActionResult> {
   try {
-    await enforceRateLimit(`cancel:${clientIp(await headers())}`, { limit: 10, windowSeconds: 600 });
+    await enforceRateLimit(`cancel:${clientIp(await headers())}`, {
+      limit: 10,
+      windowSeconds: 600,
+    });
     const token = tokenSchema.parse(accessToken);
     const orgId = await orgIdBySlug(orgSlug);
     if (!orgId) throw notFound("Booking");
@@ -41,7 +47,10 @@ export async function cancelPublicBookingAction(orgSlug: string, accessToken: st
  * Local fake checkout: builds a *signed* event and runs it through the same
  * verify -> idempotent apply pipeline as a real Stripe webhook.
  */
-export async function payFakeCheckoutAction(orgSlug: string, bookingId: string): Promise<ActionResult> {
+export async function payFakeCheckoutAction(
+  orgSlug: string,
+  bookingId: string,
+): Promise<ActionResult> {
   let accessToken: string;
   try {
     const provider = getPaymentProvider();
@@ -53,7 +62,10 @@ export async function payFakeCheckoutAction(orgSlug: string, bookingId: string):
       const [row] = await tx
         .select({ booking: bookings, externalId: payments.externalId })
         .from(bookings)
-        .innerJoin(payments, and(eq(payments.bookingId, bookings.id), eq(payments.provider, "fake")))
+        .innerJoin(
+          payments,
+          and(eq(payments.bookingId, bookings.id), eq(payments.provider, "fake")),
+        )
         .where(eq(bookings.id, id));
       return row;
     });

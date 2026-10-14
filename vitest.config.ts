@@ -10,7 +10,8 @@ const alias = {
 
 // Integration tests run against a dedicated database (created if missing).
 export const TEST_ADMIN_URL = "postgres://postgres:postgres@localhost:5433/reservo_test";
-export const TEST_APP_URL = "postgres://reservo_app:reservo_app_dev_password@localhost:5433/reservo_test";
+export const TEST_APP_URL =
+  "postgres://reservo_app:reservo_app_dev_password@localhost:5433/reservo_test";
 
 export default defineConfig({
   resolve: { alias },

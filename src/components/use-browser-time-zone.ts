@@ -19,7 +19,10 @@ export function useBrowserTimeZone(fallback: string): string {
 
 let zonesCache: string[] | undefined;
 const allZones = () =>
-  (zonesCache ??= typeof Intl.supportedValuesOf === "function" ? ["UTC", ...Intl.supportedValuesOf("timeZone").filter((z) => z !== "UTC")] : ["UTC"]);
+  (zonesCache ??=
+    typeof Intl.supportedValuesOf === "function"
+      ? ["UTC", ...Intl.supportedValuesOf("timeZone").filter((z) => z !== "UTC")]
+      : ["UTC"]);
 
 export function useTimeZoneList(): string[] {
   return useSyncExternalStore(subscribe, allZones, () => ["UTC"]);

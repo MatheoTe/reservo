@@ -13,8 +13,20 @@ import {
 } from "./types";
 
 const fakeEventSchema = z.discriminatedUnion("type", [
-  z.object({ id: z.string(), type: z.literal("deposit.succeeded"), orgId: z.uuid(), bookingId: z.uuid(), externalId: z.string() }),
-  z.object({ id: z.string(), type: z.literal("deposit.expired"), orgId: z.uuid(), bookingId: z.uuid(), externalId: z.string() }),
+  z.object({
+    id: z.string(),
+    type: z.literal("deposit.succeeded"),
+    orgId: z.uuid(),
+    bookingId: z.uuid(),
+    externalId: z.string(),
+  }),
+  z.object({
+    id: z.string(),
+    type: z.literal("deposit.expired"),
+    orgId: z.uuid(),
+    bookingId: z.uuid(),
+    externalId: z.string(),
+  }),
   z.object({
     id: z.string(),
     type: z.literal("subscription.activated"),
@@ -22,7 +34,12 @@ const fakeEventSchema = z.discriminatedUnion("type", [
     customerId: z.string(),
     subscriptionId: z.string(),
   }),
-  z.object({ id: z.string(), type: z.literal("subscription.cancelled"), orgId: z.uuid(), subscriptionId: z.string() }),
+  z.object({
+    id: z.string(),
+    type: z.literal("subscription.cancelled"),
+    orgId: z.uuid(),
+    subscriptionId: z.string(),
+  }),
 ]);
 
 export type FakeEvent = z.infer<typeof fakeEventSchema>;

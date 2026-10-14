@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowLeft, CalendarX2, Check, ChevronLeft, ChevronRight, Clock, Globe2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarX2,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Globe2,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -39,7 +48,10 @@ interface ApiSlot {
 const WINDOW_DAYS = 14;
 
 function money(cents: number, currency: string) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100);
 }
 
 export function BookingWidget({
@@ -54,7 +66,9 @@ export function BookingWidget({
   services: ServiceOption[];
 }) {
   const router = useRouter();
-  const [serviceId, setServiceId] = useState<string | null>(services.length === 1 ? services[0]!.id : null);
+  const [serviceId, setServiceId] = useState<string | null>(
+    services.length === 1 ? services[0]!.id : null,
+  );
   const [staffId, setStaffId] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [reloadCount, setReloadCount] = useState(0);
@@ -79,14 +93,19 @@ export function BookingWidget({
     return { from: from.toString(), to: from.add({ days: WINDOW_DAYS - 1 }).toString() };
   }, [offset, orgTimeZone]);
 
-  const queryKey = serviceId ? `${serviceId}|${staffId ?? "any"}|${range.from}|${range.to}|${reloadCount}` : null;
+  const queryKey = serviceId
+    ? `${serviceId}|${staffId ?? "any"}|${range.from}|${range.to}|${reloadCount}`
+    : null;
 
   useEffect(() => {
     if (!serviceId || !queryKey) return;
     const controller = new AbortController();
     const q = new URLSearchParams({ serviceId, from: range.from, to: range.to });
     if (staffId) q.set("staffId", staffId);
-    fetch(`/api/public/${orgSlug}/availability?${q}`, { cache: "no-store", signal: controller.signal })
+    fetch(`/api/public/${orgSlug}/availability?${q}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
       .then(async (res) => {
         const body = await res.json();
         if (!res.ok) throw new Error(body.error?.message ?? "Couldn't load availability");
@@ -106,10 +125,16 @@ export function BookingWidget({
 
   // Group by calendar day *in the zone the visitor is reading*, not the org's.
   const days = useMemo(
-    () => groupByLocalDate((slots ?? []).map((s) => ({ ...s, iso: s.start, start: Date.parse(s.start) })), displayZone),
+    () =>
+      groupByLocalDate(
+        (slots ?? []).map((s) => ({ ...s, iso: s.start, start: Date.parse(s.start) })),
+        displayZone,
+      ),
     [slots, displayZone],
   );
-  const selectedDate = days.some((d) => d.date === pickedDate) ? pickedDate : (days[0]?.date ?? null);
+  const selectedDate = days.some((d) => d.date === pickedDate)
+    ? pickedDate
+    : (days[0]?.date ?? null);
   const daySlots = days.find((d) => d.date === selectedDate)?.items ?? [];
 
   function resetSelection() {
@@ -164,10 +189,10 @@ export function BookingWidget({
 
   if (services.length === 0) {
     return (
-      <div className="rounded-xl border bg-card p-10 text-center shadow-sm">
-        <CalendarX2 className="mx-auto mb-3 size-6 text-muted-foreground" />
+      <div className="bg-card rounded-xl border p-10 text-center shadow-sm">
+        <CalendarX2 className="text-muted-foreground mx-auto mb-3 size-6" />
         <p className="font-medium">Online booking isn&apos;t open yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">Please check back soon.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Please check back soon.</p>
       </div>
     );
   }
@@ -175,8 +200,11 @@ export function BookingWidget({
   return (
     <div className="grid gap-4">
       {/* Step 1: service */}
-      <section className="rounded-xl border bg-card p-5 shadow-sm" aria-labelledby="step-service">
-        <h2 id="step-service" className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+      <section className="bg-card rounded-xl border p-5 shadow-sm" aria-labelledby="step-service">
+        <h2
+          id="step-service"
+          className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase"
+        >
           1. Choose a service
         </h2>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -192,37 +220,49 @@ export function BookingWidget({
               }}
               aria-pressed={serviceId === s.id}
               className={cn(
-                "rounded-lg border p-4 text-left transition-colors hover:border-primary/60",
-                serviceId === s.id && "border-primary bg-accent/60 ring-1 ring-primary",
+                "hover:border-primary/60 rounded-lg border p-4 text-left transition-colors",
+                serviceId === s.id && "border-primary bg-accent/60 ring-primary ring-1",
               )}
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="font-medium">{s.name}</p>
                 <p className="font-semibold tabular-nums">{money(s.priceCents, currency)}</p>
               </div>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
                 <Clock className="size-3.5" /> {s.durationMinutes} min
-                {s.depositCents > 0 ? <span>· {money(s.depositCents, currency)} deposit</span> : null}
+                {s.depositCents > 0 ? (
+                  <span>· {money(s.depositCents, currency)} deposit</span>
+                ) : null}
               </p>
-              {s.description ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.description}</p> : null}
+              {s.description ? (
+                <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">{s.description}</p>
+              ) : null}
             </button>
           ))}
         </div>
       </section>
 
       {service ? (
-        <section className="rounded-xl border bg-card p-5 shadow-sm" aria-labelledby="step-time">
+        <section className="bg-card rounded-xl border p-5 shadow-sm" aria-labelledby="step-time">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 id="step-time" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+            <h2
+              id="step-time"
+              className="text-muted-foreground text-sm font-semibold tracking-wide uppercase"
+            >
               2. Pick a time
             </h2>
             {zonesDiffer ? (
-              <button type="button" onClick={() => setUseOrgZone((v) => !v)} className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs hover:bg-muted">
+              <button
+                type="button"
+                onClick={() => setUseOrgZone((v) => !v)}
+                className="hover:bg-muted inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs"
+              >
                 <Globe2 className="size-3.5" />
-                Showing {useOrgZone ? "business" : "your"} time ({displayZone.replaceAll("_", " ")}) · switch
+                Showing {useOrgZone ? "business" : "your"} time ({displayZone.replaceAll("_", " ")})
+                · switch
               </button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
                 <Globe2 className="size-3.5" /> {displayZone.replaceAll("_", " ")}
               </span>
             )}
@@ -230,24 +270,55 @@ export function BookingWidget({
 
           {service.staff.length > 1 ? (
             <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Staff">
-              <StaffChip active={staffId === null} onClick={() => { setStaffId(null); resetSelection(); }} label="Any available" />
+              <StaffChip
+                active={staffId === null}
+                onClick={() => {
+                  setStaffId(null);
+                  resetSelection();
+                }}
+                label="Any available"
+              />
               {service.staff.map((m) => (
-                <StaffChip key={m.id} active={staffId === m.id} onClick={() => { setStaffId(m.id); resetSelection(); }} label={m.name} color={m.color} />
+                <StaffChip
+                  key={m.id}
+                  active={staffId === m.id}
+                  onClick={() => {
+                    setStaffId(m.id);
+                    resetSelection();
+                  }}
+                  label={m.name}
+                  color={m.color}
+                />
               ))}
             </div>
           ) : null}
 
           <div className="mb-4 flex items-center gap-2">
-            <Button variant="outline" size="icon" aria-label="Earlier dates" disabled={offset === 0 || loading} onClick={() => { setOffset((o) => Math.max(0, o - WINDOW_DAYS)); resetSelection(); }}>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Earlier dates"
+              disabled={offset === 0 || loading}
+              onClick={() => {
+                setOffset((o) => Math.max(0, o - WINDOW_DAYS));
+                resetSelection();
+              }}
+            >
               <ChevronLeft />
             </Button>
-            <div className="flex flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Dates">
+            <div
+              className="flex flex-1 gap-2 overflow-x-auto pb-1"
+              role="tablist"
+              aria-label="Dates"
+            >
               {loading && !slots ? (
-                <div className="flex h-16 items-center gap-2 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex h-16 items-center gap-2 text-sm">
                   <Loader2 className="size-4 animate-spin" /> Checking availability...
                 </div>
               ) : days.length === 0 ? (
-                <p className="py-4 text-sm text-muted-foreground">No availability in these two weeks.</p>
+                <p className="text-muted-foreground py-4 text-sm">
+                  No availability in these two weeks.
+                </p>
               ) : (
                 days.map((d) => {
                   const date = Temporal.PlainDate.from(d.date);
@@ -259,19 +330,33 @@ export function BookingWidget({
                       aria-selected={selectedDate === d.date}
                       onClick={() => setPickedDate(d.date)}
                       className={cn(
-                        "flex min-w-16 flex-col items-center rounded-lg border px-3 py-2 text-sm hover:border-primary/60",
-                        selectedDate === d.date && "border-primary bg-primary text-primary-foreground hover:border-primary",
+                        "hover:border-primary/60 flex min-w-16 flex-col items-center rounded-lg border px-3 py-2 text-sm",
+                        selectedDate === d.date &&
+                          "border-primary bg-primary text-primary-foreground hover:border-primary",
                       )}
                     >
-                      <span className="text-xs uppercase opacity-80">{js.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })}</span>
+                      <span className="text-xs uppercase opacity-80">
+                        {js.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })}
+                      </span>
                       <span className="text-lg font-semibold">{date.day}</span>
-                      <span className="text-[11px] opacity-80">{js.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</span>
+                      <span className="text-[11px] opacity-80">
+                        {js.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}
+                      </span>
                     </button>
                   );
                 })
               )}
             </div>
-            <Button variant="outline" size="icon" aria-label="Later dates" disabled={loading} onClick={() => { setOffset((o) => o + WINDOW_DAYS); resetSelection(); }}>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Later dates"
+              disabled={loading}
+              onClick={() => {
+                setOffset((o) => o + WINDOW_DAYS);
+                resetSelection();
+              }}
+            >
               <ChevronRight />
             </Button>
           </div>
@@ -284,8 +369,9 @@ export function BookingWidget({
                 data-testid="slot"
                 onClick={() => setSelected({ start: s.iso, end: s.end, staffIds: s.staffIds })}
                 className={cn(
-                  "rounded-md border py-2 text-sm font-medium tabular-nums transition-colors hover:border-primary hover:text-primary",
-                  selected?.start === s.iso && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+                  "hover:border-primary hover:text-primary rounded-md border py-2 text-sm font-medium tabular-nums transition-colors",
+                  selected?.start === s.iso &&
+                    "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
                 )}
               >
                 {localTime(s.start, displayZone)}
@@ -296,15 +382,22 @@ export function BookingWidget({
       ) : null}
 
       {service && selected ? (
-        <section className="rounded-xl border bg-card p-5 shadow-sm" aria-labelledby="step-details">
+        <section className="bg-card rounded-xl border p-5 shadow-sm" aria-labelledby="step-details">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 id="step-details" className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+              <h2
+                id="step-details"
+                className="text-muted-foreground text-sm font-semibold tracking-wide uppercase"
+              >
                 3. Your details
               </h2>
               <p className="mt-1 text-sm">
                 <span className="font-medium">{service.name}</span> ·{" "}
-                {new Date(selected.start).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: displayZone })}
+                {new Date(selected.start).toLocaleString("en-US", {
+                  dateStyle: "full",
+                  timeStyle: "short",
+                  timeZone: displayZone,
+                })}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
@@ -314,20 +407,52 @@ export function BookingWidget({
           <form action={submit} className="grid gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name" htmlFor="name" error={fieldErrors["customer.name"]}>
-                <Input id="name" name="name" autoComplete="name" required minLength={2} defaultValue={draft.name} />
+                <Input
+                  id="name"
+                  name="name"
+                  autoComplete="name"
+                  required
+                  minLength={2}
+                  defaultValue={draft.name}
+                />
               </Field>
-              <Field label="Email" htmlFor="email" error={fieldErrors["customer.email"]} hint="We'll send your confirmation here.">
-                <Input id="email" name="email" type="email" autoComplete="email" required defaultValue={draft.email} />
+              <Field
+                label="Email"
+                htmlFor="email"
+                error={fieldErrors["customer.email"]}
+                hint="We'll send your confirmation here."
+              >
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  defaultValue={draft.email}
+                />
               </Field>
             </div>
             <Field label="Phone (optional)" htmlFor="phone" error={fieldErrors["customer.phone"]}>
-              <Input id="phone" name="phone" type="tel" autoComplete="tel" defaultValue={draft.phone} />
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                defaultValue={draft.phone}
+              />
             </Field>
             <Field label="Anything we should know? (optional)" htmlFor="notes">
               <Textarea id="notes" name="notes" maxLength={1000} defaultValue={draft.notes} />
             </Field>
             {/* Honeypot: hidden from humans, irresistible to naive bots. */}
-            <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden
+              className="hidden"
+            />
             <Button type="submit" size="lg" disabled={submitting}>
               {submitting ? (
                 <>
@@ -356,14 +481,28 @@ function canonicalZone(timeZone: string): string {
   }
 }
 
-function StaffChip({ active, onClick, label, color }: { active: boolean; onClick: () => void; label: string; color?: string }) {
+function StaffChip({
+  active,
+  onClick,
+  label,
+  color,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  color?: string;
+}) {
   return (
     <button
       type="button"
       role="radio"
       aria-checked={active}
       onClick={onClick}
-      className={cn("inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm hover:bg-muted", active && "border-primary bg-accent", !color && "pl-3")}
+      className={cn(
+        "hover:bg-muted inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm",
+        active && "border-primary bg-accent",
+        !color && "pl-3",
+      )}
     >
       {color ? <Avatar name={label} color={color} className="size-6 text-[10px]" /> : null}
       {label}

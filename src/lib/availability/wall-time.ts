@@ -48,7 +48,11 @@ export function assertTimeZone(timeZone: string): void {
  *
  * `minutes === 1440` means "midnight at the end of this day".
  */
-export function wallTimeToInstant(date: Temporal.PlainDate, minutes: number, timeZone: string): number {
+export function wallTimeToInstant(
+  date: Temporal.PlainDate,
+  minutes: number,
+  timeZone: string,
+): number {
   const day = minutes === MINUTES_PER_DAY ? date.add({ days: 1 }) : date;
   const m = minutes === MINUTES_PER_DAY ? 0 : minutes;
   return day
@@ -67,7 +71,11 @@ export function wallTimeToInstant(date: Temporal.PlainDate, minutes: number, tim
  * twice (they are genuinely different hours) and a 02:30 slot on a
  * spring-forward night is not offered at all.
  */
-export function instantsForWallTime(date: Temporal.PlainDate, minutes: number, timeZone: string): number[] {
+export function instantsForWallTime(
+  date: Temporal.PlainDate,
+  minutes: number,
+  timeZone: string,
+): number[] {
   const pdt = date.toPlainDateTime({ hour: Math.floor(minutes / 60), minute: minutes % 60 });
   const earlier = pdt.toZonedDateTime(timeZone, { disambiguation: "earlier" });
   const later = pdt.toZonedDateTime(timeZone, { disambiguation: "later" });
@@ -82,7 +90,10 @@ export function instantToPlainDate(epochMs: number, timeZone: string): Temporal.
   return Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(timeZone).toPlainDate();
 }
 
-export function* eachDate(from: Temporal.PlainDate, to: Temporal.PlainDate): Generator<Temporal.PlainDate> {
+export function* eachDate(
+  from: Temporal.PlainDate,
+  to: Temporal.PlainDate,
+): Generator<Temporal.PlainDate> {
   for (let d = from; Temporal.PlainDate.compare(d, to) <= 0; d = d.add({ days: 1 })) {
     yield d;
   }

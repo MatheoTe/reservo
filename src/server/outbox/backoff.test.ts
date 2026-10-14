@@ -6,7 +6,9 @@ const noJitter = { ...DEFAULT_BACKOFF, jitter: 0 };
 
 describe("backoffDelayMs", () => {
   it("doubles on each attempt", () => {
-    expect([1, 2, 3, 4].map((n) => backoffDelayMs(n, noJitter))).toEqual([5_000, 10_000, 20_000, 40_000]);
+    expect([1, 2, 3, 4].map((n) => backoffDelayMs(n, noJitter))).toEqual([
+      5_000, 10_000, 20_000, 40_000,
+    ]);
   });
 
   it("is capped", () => {

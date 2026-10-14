@@ -1,7 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import type { BookingStatus } from "@/db/schema";
 
-const MAP: Record<BookingStatus, { label: string; variant: "success" | "warning" | "muted" | "destructive" }> = {
+const MAP: Record<
+  BookingStatus,
+  { label: string; variant: "success" | "warning" | "muted" | "destructive" }
+> = {
   confirmed: { label: "Confirmed", variant: "success" },
   pending_payment: { label: "Awaiting deposit", variant: "warning" },
   cancelled: { label: "Cancelled", variant: "destructive" },

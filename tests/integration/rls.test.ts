@@ -3,13 +3,29 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { auditLog, bookings, customers, memberships, organizations, services, staffMembers, staffServices } from "@/db/schema";
+import {
+  auditLog,
+  bookings,
+  customers,
+  memberships,
+  organizations,
+  services,
+  staffMembers,
+  staffServices,
+} from "@/db/schema";
 import { getDb } from "@/server/db/client";
 import { orgIdBySlug, withTenant, withUser } from "@/server/db/tenant";
 import { pgError } from "@/server/errors";
 import { listUserOrganizations } from "@/server/services/organizations";
 
-import { admin, createTestOrg, insertBookingDirect, type TestOrg, tomorrowAt, useCleanDatabase } from "./helpers";
+import {
+  admin,
+  createTestOrg,
+  insertBookingDirect,
+  type TestOrg,
+  tomorrowAt,
+  useCleanDatabase,
+} from "./helpers";
 
 /**
  * These tests talk to Postgres as `reservo_app`, the same role the app uses.
@@ -30,9 +46,11 @@ describe("row level security", () => {
   });
 
   it("the app connects as a role that is neither superuser nor BYPASSRLS", async () => {
-    const [role] = await getDb().execute<{ rolname: string; rolsuper: boolean; rolbypassrls: boolean }>(
-      sql`select rolname, rolsuper, rolbypassrls from pg_roles where rolname = current_user`,
-    );
+    const [role] = await getDb().execute<{
+      rolname: string;
+      rolsuper: boolean;
+      rolbypassrls: boolean;
+    }>(sql`select rolname, rolsuper, rolbypassrls from pg_roles where rolname = current_user`);
     expect(role).toEqual({ rolname: "reservo_app", rolsuper: false, rolbypassrls: false });
   });
 
@@ -65,23 +83,38 @@ describe("row level security", () => {
   });
 
   it("can't read another tenant's row even by primary key", async () => {
-    const found = await withTenant({ orgId: a.orgId }, (tx) => tx.select().from(services).where(eq(services.id, b.serviceId)));
+    const found = await withTenant({ orgId: a.orgId }, (tx) =>
+      tx.select().from(services).where(eq(services.id, b.serviceId)),
+    );
     expect(found).toEqual([]);
   });
 
   it("can't insert a row into another tenant", async () => {
     const err = await withTenant({ orgId: a.orgId }, (tx) =>
-      tx.insert(customers).values({ orgId: b.orgId, name: "Intruder", email: "intruder@example.com" }),
+      tx
+        .insert(customers)
+        .values({ orgId: b.orgId, name: "Intruder", email: "intruder@example.com" }),
     ).catch((e: unknown) => e);
     expect(pgError(err)?.code).toBe("42501"); // new row violates row-level security policy
-    const n = (await admin<{ n: number }[]>`select count(*)::int as n from customers where email = 'intruder@example.com'`)[0]!.n;
+    const n = (
+      await admin<
+        { n: number }[]
+      >`select count(*)::int as n from customers where email = 'intruder@example.com'`
+    )[0]!.n;
     expect(n).toBe(0);
   });
 
   it("can't update or delete another tenant's rows (silently matches zero rows)", async () => {
     const result = await withTenant({ orgId: a.orgId }, async (tx) => ({
-      updated: await tx.update(services).set({ name: "Hacked" }).where(eq(services.id, b.serviceId)).returning(),
-      deleted: await tx.delete(staffServices).where(eq(staffServices.serviceId, b.serviceId)).returning(),
+      updated: await tx
+        .update(services)
+        .set({ name: "Hacked" })
+        .where(eq(services.id, b.serviceId))
+        .returning(),
+      deleted: await tx
+        .delete(staffServices)
+        .where(eq(staffServices.serviceId, b.serviceId))
+        .returning(),
     }));
     expect(result).toEqual({ updated: [], deleted: [] });
     const [row] = await admin`select name from services where id = ${b.serviceId}`;
@@ -98,7 +131,9 @@ describe("row level security", () => {
   it("composite foreign keys stop cross-tenant references that RLS alone would miss", async () => {
     // The row itself belongs to org A (passes RLS) but points at org B's staff.
     const err = await withTenant({ orgId: a.orgId }, (tx) =>
-      tx.insert(staffServices).values({ orgId: a.orgId, staffId: b.ownerStaffId, serviceId: a.serviceId }),
+      tx
+        .insert(staffServices)
+        .values({ orgId: a.orgId, staffId: b.ownerStaffId, serviceId: a.serviceId }),
     ).catch((e: unknown) => e);
     expect(pgError(err)?.code).toBe("23503");
   });
@@ -111,12 +146,16 @@ describe("row level security", () => {
     }
     const leaked = await Promise.all(Array.from({ length: 15 }, () => db.select().from(services)));
     expect(leaked.flat()).toHaveLength(0);
-    const settings = await db.execute<{ org: string | null }>(sql`select current_setting('app.current_org', true) as org`);
+    const settings = await db.execute<{ org: string | null }>(
+      sql`select current_setting('app.current_org', true) as org`,
+    );
     expect(settings[0]!.org || null).toBeNull();
   });
 
   it("a garbage tenant id errors instead of matching anything", async () => {
-    const err = await withTenant({ orgId: "not-a-uuid" }, (tx) => tx.select().from(services)).catch((e: unknown) => e);
+    const err = await withTenant({ orgId: "not-a-uuid" }, (tx) => tx.select().from(services)).catch(
+      (e: unknown) => e,
+    );
     expect(pgError(err)?.code).toBe("22P02"); // invalid_text_representation
   });
 
@@ -140,20 +179,28 @@ describe("row level security", () => {
 
   it("an organization can't be created under someone else's id", async () => {
     const err = await withTenant({ orgId: a.orgId }, (tx) =>
-      tx.insert(organizations).values({ id: randomUUID(), name: "Sneaky", slug: "sneaky", timeZone: "UTC" }),
+      tx
+        .insert(organizations)
+        .values({ id: randomUUID(), name: "Sneaky", slug: "sneaky", timeZone: "UTC" }),
     ).catch((e: unknown) => e);
     expect(pgError(err)?.code).toBe("42501");
   });
 
   it("the audit log is append-only for the application role", async () => {
-    const err = await withTenant({ orgId: a.orgId }, (tx) => tx.update(auditLog).set({ action: "tampered" })).catch((e: unknown) => e);
+    const err = await withTenant({ orgId: a.orgId }, (tx) =>
+      tx.update(auditLog).set({ action: "tampered" }),
+    ).catch((e: unknown) => e);
     expect(pgError(err)?.code).toBe("42501"); // permission denied for table audit_log
-    const delErr = await withTenant({ orgId: a.orgId }, (tx) => tx.delete(auditLog)).catch((e: unknown) => e);
+    const delErr = await withTenant({ orgId: a.orgId }, (tx) => tx.delete(auditLog)).catch(
+      (e: unknown) => e,
+    );
     expect(pgError(delErr)?.code).toBe("42501");
   });
 
   it("bookings can't be deleted by the application, only cancelled", async () => {
-    const err = await withTenant({ orgId: a.orgId }, (tx) => tx.delete(bookings)).catch((e: unknown) => e);
+    const err = await withTenant({ orgId: a.orgId }, (tx) => tx.delete(bookings)).catch(
+      (e: unknown) => e,
+    );
     expect(pgError(err)?.code).toBe("42501");
   });
 

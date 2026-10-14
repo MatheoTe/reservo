@@ -61,9 +61,13 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">{mode === "sign-up" ? "Create your account" : "Welcome back"}</CardTitle>
+        <CardTitle className="text-xl">
+          {mode === "sign-up" ? "Create your account" : "Welcome back"}
+        </CardTitle>
         <CardDescription>
-          {mode === "sign-up" ? "Start taking bookings in minutes." : "Sign in to manage your bookings."}
+          {mode === "sign-up"
+            ? "Start taking bookings in minutes."
+            : "Sign in to manage your bookings."}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-5">
@@ -76,7 +80,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           <Field label="Email" htmlFor="email">
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </Field>
-          <Field label="Password" htmlFor="password" hint={mode === "sign-up" ? "At least 8 characters." : undefined}>
+          <Field
+            label="Password"
+            htmlFor="password"
+            hint={mode === "sign-up" ? "At least 8 characters." : undefined}
+          >
             <Input
               id="password"
               name="password"
@@ -87,7 +95,10 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
             />
           </Field>
           {error ? (
-            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm"
+            >
               {error}
             </p>
           ) : null}
@@ -98,16 +109,23 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 
         {mode === "sign-in" ? (
           <>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+            <div className="text-muted-foreground flex items-center gap-3 text-xs">
+              <span className="bg-border h-px flex-1" /> or{" "}
+              <span className="bg-border h-px flex-1" />
             </div>
             {magicSent ? (
-              <p className="rounded-md bg-accent px-3 py-2 text-center text-sm text-accent-foreground">
+              <p className="bg-accent text-accent-foreground rounded-md px-3 py-2 text-center text-sm">
                 Link sent. In development, open Mailpit at localhost:8025.
               </p>
             ) : (
               <form action={sendMagicLink} className="grid gap-2">
-                <Input name="email" type="email" placeholder="you@business.com" aria-label="Email for magic link" required />
+                <Input
+                  name="email"
+                  type="email"
+                  placeholder="you@business.com"
+                  aria-label="Email for magic link"
+                  required
+                />
                 <Button type="submit" variant="outline" disabled={pending}>
                   <Mail /> Email me a sign-in link
                 </Button>
@@ -116,10 +134,10 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           </>
         ) : null}
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           {mode === "sign-up" ? "Already have an account? " : "New to Reservo? "}
           <Link
-            className="font-medium text-primary hover:underline"
+            className="text-primary font-medium hover:underline"
             href={`${mode === "sign-up" ? "/sign-in" : "/sign-up"}${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`}
           >
             {mode === "sign-up" ? "Sign in" : "Create an account"}

@@ -18,7 +18,11 @@ export async function listCustomers(tx: Tx, opts: { search?: string; limit?: num
       lastVisit: sql<Date | null>`(select max(b.starts_at) from ${bookings} b where b.customer_id = ${customers.id} and b.status = 'confirmed')`,
     })
     .from(customers)
-    .where(term ? or(ilike(customers.name, `%${term}%`), ilike(customers.email, `%${term}%`)) : undefined)
+    .where(
+      term
+        ? or(ilike(customers.name, `%${term}%`), ilike(customers.email, `%${term}%`))
+        : undefined,
+    )
     .orderBy(customers.name)
     .limit(opts.limit ?? 200);
 }
@@ -27,7 +31,13 @@ export async function getCustomer(tx: Tx, customerId: string) {
   const [customer] = await tx.select().from(customers).where(eq(customers.id, customerId));
   if (!customer) throw notFound("Customer");
   const history = await tx
-    .select({ id: bookings.id, startsAt: bookings.startsAt, status: bookings.status, serviceName: services.name, priceCents: bookings.priceCents })
+    .select({
+      id: bookings.id,
+      startsAt: bookings.startsAt,
+      status: bookings.status,
+      serviceName: services.name,
+      priceCents: bookings.priceCents,
+    })
     .from(bookings)
     .innerJoin(services, eq(services.id, bookings.serviceId))
     .where(and(eq(bookings.customerId, customerId)))
@@ -37,6 +47,10 @@ export async function getCustomer(tx: Tx, customerId: string) {
 }
 
 export async function updateCustomerNotes(tx: Tx, customerId: string, notes: string) {
-  const [row] = await tx.update(customers).set({ notes }).where(eq(customers.id, customerId)).returning({ id: customers.id });
+  const [row] = await tx
+    .update(customers)
+    .set({ notes })
+    .where(eq(customers.id, customerId))
+    .returning({ id: customers.id });
   if (!row) throw notFound("Customer");
 }

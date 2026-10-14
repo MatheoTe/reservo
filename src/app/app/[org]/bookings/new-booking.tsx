@@ -6,7 +6,15 @@ import { useState } from "react";
 
 import { useAction } from "@/components/use-action";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { createDashboardBookingAction } from "@/server/actions/bookings";
@@ -23,7 +31,9 @@ export function NewBookingDialog({ orgSlug, today, defaultOpen, services, staff 
   const router = useRouter();
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
-  const eligible = staff.filter((s) => services.find((x) => x.id === serviceId)?.staffIds.includes(s.id));
+  const eligible = staff.filter((s) =>
+    services.find((x) => x.id === serviceId)?.staffIds.includes(s.id),
+  );
   const { run, pending, fieldErrors } = useAction<{ id: string }>({
     success: "Booking created",
     onSuccess: () => {
@@ -42,10 +52,12 @@ export function NewBookingDialog({ orgSlug, today, defaultOpen, services, staff 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New booking</DialogTitle>
-          <DialogDescription>Availability rules still apply: hours, breaks, time off and existing bookings.</DialogDescription>
+          <DialogDescription>
+            Availability rules still apply: hours, breaks, time off and existing bookings.
+          </DialogDescription>
         </DialogHeader>
         {services.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Create a service first.</p>
+          <p className="text-muted-foreground text-sm">Create a service first.</p>
         ) : (
           <form
             id="new-booking"
@@ -57,7 +69,11 @@ export function NewBookingDialog({ orgSlug, today, defaultOpen, services, staff 
                   staffId: fd.get("staffId"),
                   date: fd.get("date"),
                   time: fd.get("time"),
-                  customer: { name: fd.get("name"), email: fd.get("email"), phone: fd.get("phone") || undefined },
+                  customer: {
+                    name: fd.get("name"),
+                    email: fd.get("email"),
+                    phone: fd.get("phone") || undefined,
+                  },
                   notes: fd.get("notes") || undefined,
                 }),
               )
@@ -65,7 +81,11 @@ export function NewBookingDialog({ orgSlug, today, defaultOpen, services, staff 
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Service" htmlFor="serviceId">
-                <NativeSelect id="serviceId" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                <NativeSelect
+                  id="serviceId"
+                  value={serviceId}
+                  onChange={(e) => setServiceId(e.target.value)}
+                >
                   {services.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.durationMinutes} min)
@@ -83,7 +103,14 @@ export function NewBookingDialog({ orgSlug, today, defaultOpen, services, staff 
                 </NativeSelect>
               </Field>
               <Field label="Date" htmlFor="date" error={fieldErrors.date}>
-                <Input id="date" name="date" type="date" min={today} defaultValue={today} required />
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  min={today}
+                  defaultValue={today}
+                  required
+                />
               </Field>
               <Field label="Start time" htmlFor="time" error={fieldErrors.time}>
                 <Input id="time" name="time" type="time" step={300} defaultValue="10:00" required />

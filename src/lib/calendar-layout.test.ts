@@ -8,7 +8,10 @@ const summary = (items: ReturnType<typeof layoutLanes<ReturnType<typeof ev>>>) =
 
 describe("layoutLanes", () => {
   it("gives non-overlapping events the full width", () => {
-    expect(summary(layoutLanes([ev("a", 540, 600), ev("b", 600, 660)]))).toEqual({ a: "0/1", b: "0/1" });
+    expect(summary(layoutLanes([ev("a", 540, 600), ev("b", 600, 660)]))).toEqual({
+      a: "0/1",
+      b: "0/1",
+    });
   });
 
   it("splits overlapping events into lanes only within their cluster", () => {
@@ -17,7 +20,9 @@ describe("layoutLanes", () => {
   });
 
   it("reuses a lane once it frees up inside the same cluster", () => {
-    const result = summary(layoutLanes([ev("long", 540, 720), ev("x", 550, 600), ev("y", 610, 660)]));
+    const result = summary(
+      layoutLanes([ev("long", 540, 720), ev("x", 550, 600), ev("y", 610, 660)]),
+    );
     expect(result).toEqual({ long: "0/2", x: "1/2", y: "1/2" });
   });
 

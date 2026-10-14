@@ -4,7 +4,13 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
-import { type MemberRole, memberships, type Organization, organizations, staffMembers } from "@/db/schema";
+import {
+  type MemberRole,
+  memberships,
+  type Organization,
+  organizations,
+  staffMembers,
+} from "@/db/schema";
 
 import { can, type Permission } from "./auth/rbac";
 import { requireUser, type SessionUser } from "./auth/session";
@@ -36,7 +42,10 @@ export const getOrgContext = cache(async (slug: string): Promise<OrgContext> => 
       .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, user.id)));
     if (!membership) return null;
     const [org] = await tx.select().from(organizations).where(eq(organizations.id, orgId));
-    const [staff] = await tx.select({ id: staffMembers.id }).from(staffMembers).where(eq(staffMembers.userId, user.id));
+    const [staff] = await tx
+      .select({ id: staffMembers.id })
+      .from(staffMembers)
+      .where(eq(staffMembers.userId, user.id));
     return { org: org!, role: membership.role, staffId: staff?.id ?? null };
   });
   if (!ctx) notFound();

@@ -27,8 +27,14 @@ export default async function SettingsPage({
   const tz = ctx.org.timeZone;
 
   const { holidayRows, audit } = await readInOrg(ctx, async (tx) => ({
-    holidayRows: await tx.select().from(holidays).where(gte(holidays.date, todayIn(tz).toString())).orderBy(holidays.date),
-    audit: ctx.can("audit:read") ? await tx.select().from(auditLog).orderBy(desc(auditLog.id)).limit(25) : [],
+    holidayRows: await tx
+      .select()
+      .from(holidays)
+      .where(gte(holidays.date, todayIn(tz).toString()))
+      .orderBy(holidays.date),
+    audit: ctx.can("audit:read")
+      ? await tx.select().from(auditLog).orderBy(desc(auditLog.id)).limit(25)
+      : [],
   }));
 
   return (
@@ -68,7 +74,10 @@ export default async function SettingsPage({
             </CardHeader>
             <CardContent className="grid gap-3">
               {holidayRows.map((h) => (
-                <div key={h.date} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <div
+                  key={h.date}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                >
                   <span>{h.name}</span>
                   <Badge variant="outline">{h.date}</Badge>
                 </div>
@@ -83,7 +92,10 @@ export default async function SettingsPage({
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Audit log</CardTitle>
-            <CardDescription>Append-only record of sensitive actions. The application role cannot edit or delete it.</CardDescription>
+            <CardDescription>
+              Append-only record of sensitive actions. The application role cannot edit or delete
+              it.
+            </CardDescription>
           </CardHeader>
           <Table>
             <THead>
@@ -97,12 +109,16 @@ export default async function SettingsPage({
             <TBody>
               {audit.map((a) => (
                 <TR key={a.id}>
-                  <TD className="whitespace-nowrap text-muted-foreground">{formatDateTime(a.createdAt, tz)}</TD>
+                  <TD className="text-muted-foreground whitespace-nowrap">
+                    {formatDateTime(a.createdAt, tz)}
+                  </TD>
                   <TD>
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{a.action}</code>
+                    <code className="bg-muted rounded px-1.5 py-0.5 text-xs">{a.action}</code>
                   </TD>
                   <TD className="text-muted-foreground">{a.targetType ?? "-"}</TD>
-                  <TD className="max-w-xs truncate font-mono text-xs text-muted-foreground">{JSON.stringify(a.metadata)}</TD>
+                  <TD className="text-muted-foreground max-w-xs truncate font-mono text-xs">
+                    {JSON.stringify(a.metadata)}
+                  </TD>
                 </TR>
               ))}
             </TBody>

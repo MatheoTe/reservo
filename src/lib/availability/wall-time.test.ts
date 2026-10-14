@@ -34,7 +34,9 @@ describe("wallTimeToInstant", () => {
     expect(iso(wallTimeToInstant(d("2026-03-09"), 9 * 60, "America/Argentina/Buenos_Aires"))).toBe(
       "2026-03-09T12:00:00Z",
     );
-    expect(iso(wallTimeToInstant(d("2026-03-09"), 9 * 60, "Asia/Tokyo"))).toBe("2026-03-09T00:00:00Z");
+    expect(iso(wallTimeToInstant(d("2026-03-09"), 9 * 60, "Asia/Tokyo"))).toBe(
+      "2026-03-09T00:00:00Z",
+    );
   });
 
   it("maps 24:00 to midnight of the next day", () => {
@@ -50,7 +52,9 @@ describe("wallTimeToInstant", () => {
 
   it("resolves an ambiguous time (fall-back overlap) to the earlier instant", () => {
     // New York repeats 01:00-02:00 on 2026-11-01. 01:30 EDT (UTC-4) comes first.
-    expect(iso(wallTimeToInstant(d("2026-11-01"), 90, "America/New_York"))).toBe("2026-11-01T05:30:00Z");
+    expect(iso(wallTimeToInstant(d("2026-11-01"), 90, "America/New_York"))).toBe(
+      "2026-11-01T05:30:00Z",
+    );
   });
 });
 
@@ -71,7 +75,9 @@ describe("instantsForWallTime", () => {
   it("handles a 30-minute DST shift (Lord Howe Island)", () => {
     // 2026-10-04: clocks go 02:00 -> 02:30, so 02:15 never happens.
     expect(instantsForWallTime(d("2026-10-04"), 2 * 60 + 15, "Australia/Lord_Howe")).toEqual([]);
-    expect(instantsForWallTime(d("2026-10-04"), 2 * 60 + 30, "Australia/Lord_Howe")).toHaveLength(1);
+    expect(instantsForWallTime(d("2026-10-04"), 2 * 60 + 30, "Australia/Lord_Howe")).toHaveLength(
+      1,
+    );
   });
 });
 

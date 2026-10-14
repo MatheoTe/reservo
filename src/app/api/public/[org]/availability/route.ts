@@ -17,7 +17,10 @@ import { loadOrg } from "@/server/services/bookings";
 export async function GET(request: Request, { params }: { params: Promise<{ org: string }> }) {
   try {
     const { org: slug } = await params;
-    await enforceRateLimit(`availability:${clientIp(request.headers)}`, RATE_LIMITS.publicAvailability);
+    await enforceRateLimit(
+      `availability:${clientIp(request.headers)}`,
+      RATE_LIMITS.publicAvailability,
+    );
     const url = new URL(request.url);
     const query = parseOrThrow(availabilityQuerySchema, Object.fromEntries(url.searchParams));
     const orgId = await orgIdBySlug(slug);
@@ -28,7 +31,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ org:
       const { slots, staff } = await computeAvailability(tx, { org, ...query, now: new Date() });
       return {
         timeZone: org.timeZone,
-        slots: poolSlots(slots, staff.map((s) => s.id)).map((s) => ({
+        slots: poolSlots(
+          slots,
+          staff.map((s) => s.id),
+        ).map((s) => ({
           start: new Date(s.start).toISOString(),
           end: new Date(s.end).toISOString(),
           staffIds: s.staffIds,

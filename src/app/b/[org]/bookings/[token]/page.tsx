@@ -35,15 +35,23 @@ export default async function CustomerBookingPage({
   const zone = booking.customerTimeZone ?? org.timeZone;
   const upcoming = booking.startsAt > new Date();
   const header = {
-    confirmed: { icon: CalendarCheck2, title: sp.new || sp.paid ? "You're booked!" : "Booking confirmed", tone: "text-success" },
+    confirmed: {
+      icon: CalendarCheck2,
+      title: sp.new || sp.paid ? "You're booked!" : "Booking confirmed",
+      tone: "text-success",
+    },
     pending_payment: { icon: Clock3, title: "Waiting for your deposit", tone: "text-warning" },
     cancelled: { icon: XCircle, title: "Booking cancelled", tone: "text-destructive" },
-    expired: { icon: CircleAlert, title: "This reservation expired", tone: "text-muted-foreground" },
+    expired: {
+      icon: CircleAlert,
+      title: "This reservation expired",
+      tone: "text-muted-foreground",
+    },
   }[booking.status];
   const Icon = header.icon;
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-muted/40 px-4 py-12">
+    <div className="bg-muted/40 grid min-h-dvh place-items-center px-4 py-12">
       <div className="w-full max-w-md">
         <Card>
           <CardContent className="grid gap-6 pt-8 text-center">
@@ -53,17 +61,23 @@ export default async function CustomerBookingPage({
                 {header.title}
               </h1>
               {booking.status === "confirmed" ? (
-                <p className="mt-1 text-sm text-muted-foreground">A confirmation was sent to {data.customerEmail}.</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  A confirmation was sent to {data.customerEmail}.
+                </p>
               ) : null}
             </div>
-            <dl className="grid gap-3 rounded-lg border bg-muted/40 p-4 text-left text-sm">
+            <dl className="bg-muted/40 grid gap-3 rounded-lg border p-4 text-left text-sm">
               <Row label="Where" value={org.name} />
               <Row label="What" value={data.serviceName} />
               <Row label="With" value={data.staffName} />
               <Row label="When" value={formatDateTime(booking.startsAt, zone)} />
-              {booking.depositCents > 0 ? <Row label="Deposit" value={formatMoney(booking.depositCents, org.currency)} /> : null}
+              {booking.depositCents > 0 ? (
+                <Row label="Deposit" value={formatMoney(booking.depositCents, org.currency)} />
+              ) : null}
             </dl>
-            {booking.status === "confirmed" && upcoming ? <CancelOwnBooking orgSlug={slug} token={token} /> : null}
+            {booking.status === "confirmed" && upcoming ? (
+              <CancelOwnBooking orgSlug={slug} token={token} />
+            ) : null}
             {booking.status !== "confirmed" && booking.status !== "pending_payment" ? (
               <Button asChild>
                 <Link href={`/b/${slug}`}>Book another time</Link>

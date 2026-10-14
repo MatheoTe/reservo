@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     const outcome = await handleWebhook(provider, rawBody, request.headers.get("x-fake-signature"));
     return NextResponse.json({ received: true, outcome });
   } catch (err) {
-    if (err instanceof WebhookSignatureError) return NextResponse.json({ error: err.message }, { status: 400 });
+    if (err instanceof WebhookSignatureError)
+      return NextResponse.json({ error: err.message }, { status: 400 });
     console.error("[webhooks/fake] processing failed", err);
     return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }

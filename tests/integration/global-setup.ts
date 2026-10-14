@@ -2,8 +2,11 @@ import postgres from "postgres";
 
 import { runMigrations } from "../../scripts/migrate-lib";
 
-const ADMIN_URL = process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://postgres:postgres@localhost:5433/reservo_test";
-const APP_URL = process.env.TEST_DATABASE_URL ?? "postgres://reservo_app:reservo_app_dev_password@localhost:5433/reservo_test";
+const ADMIN_URL =
+  process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://postgres:postgres@localhost:5433/reservo_test";
+const APP_URL =
+  process.env.TEST_DATABASE_URL ??
+  "postgres://reservo_app:reservo_app_dev_password@localhost:5433/reservo_test";
 
 /**
  * Recreates the test schema from the real migrations once per run, so the

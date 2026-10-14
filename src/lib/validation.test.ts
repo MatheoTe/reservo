@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { createOrganizationSchema, publicBookingSchema, serviceSchema, slugSchema, weeklyWindowSchema } from "./validation";
+import {
+  createOrganizationSchema,
+  publicBookingSchema,
+  serviceSchema,
+  slugSchema,
+  weeklyWindowSchema,
+} from "./validation";
 
 describe("slugSchema", () => {
   it.each(["glow-studio", "abc", "clinic-24"])("accepts %s", (s) => {
@@ -18,14 +24,27 @@ describe("slugSchema", () => {
 
 describe("createOrganizationSchema", () => {
   it("rejects reserved slugs and unknown zones", () => {
-    const r = createOrganizationSchema.safeParse({ name: "Acme", slug: "api", timeZone: "Nowhere/City" });
+    const r = createOrganizationSchema.safeParse({
+      name: "Acme",
+      slug: "api",
+      timeZone: "Nowhere/City",
+    });
     expect(r.success).toBe(false);
-    expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(expect.arrayContaining(["slug", "timeZone"]));
+    expect(r.error?.issues.map((i) => i.path.join("."))).toEqual(
+      expect.arrayContaining(["slug", "timeZone"]),
+    );
   });
 });
 
 describe("serviceSchema", () => {
-  const base = { name: "Cut", durationMinutes: 30, priceCents: 3000, depositCents: 0, bufferBeforeMinutes: 0, bufferAfterMinutes: 5 };
+  const base = {
+    name: "Cut",
+    durationMinutes: 30,
+    priceCents: 3000,
+    depositCents: 0,
+    bufferBeforeMinutes: 0,
+    bufferAfterMinutes: 5,
+  };
 
   it("coerces form strings", () => {
     expect(serviceSchema.parse({ ...base, durationMinutes: "45" }).durationMinutes).toBe(45);
@@ -38,11 +57,15 @@ describe("serviceSchema", () => {
 
 describe("weeklyWindowSchema", () => {
   it("rejects inverted windows", () => {
-    expect(weeklyWindowSchema.safeParse({ weekday: 1, start: "17:00", end: "09:00" }).success).toBe(false);
+    expect(weeklyWindowSchema.safeParse({ weekday: 1, start: "17:00", end: "09:00" }).success).toBe(
+      false,
+    );
   });
 
   it("allows 24:00 as end of day", () => {
-    expect(weeklyWindowSchema.safeParse({ weekday: 1, start: "20:00", end: "24:00" }).success).toBe(true);
+    expect(weeklyWindowSchema.safeParse({ weekday: 1, start: "20:00", end: "24:00" }).success).toBe(
+      true,
+    );
   });
 });
 
@@ -59,7 +82,9 @@ describe("publicBookingSchema", () => {
   });
 
   it("requires an explicit offset on the start time", () => {
-    expect(publicBookingSchema.safeParse({ ...valid, start: "2026-03-10T14:30:00" }).success).toBe(false);
+    expect(publicBookingSchema.safeParse({ ...valid, start: "2026-03-10T14:30:00" }).success).toBe(
+      false,
+    );
   });
 
   it("rejects bots that fill the honeypot", () => {

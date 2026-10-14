@@ -16,11 +16,22 @@ function times(q: AvailabilityQuery): string[] {
 
 describe("computeSlots - working hours", () => {
   it("offers every hour inside 09:00-17:00 for a 60 minute service", () => {
-    expect(times(query())).toEqual(["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"]);
+    expect(times(query())).toEqual([
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+    ]);
   });
 
   it("never offers a slot that would end after closing", () => {
-    const q = query({ service: { durationMinutes: 90, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 } });
+    const q = query({
+      service: { durationMinutes: 90, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 },
+    });
     expect(times(q).at(-1)).toBe("15:00"); // 15:00-16:30 fits, 16:00-17:30 doesn't
   });
 
@@ -95,12 +106,16 @@ describe("computeSlots - working hours", () => {
   });
 
   it("handles a service longer than any window", () => {
-    const q = query({ service: { durationMinutes: 600, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 } });
+    const q = query({
+      service: { durationMinutes: 600, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 },
+    });
     expect(computeSlots(q)).toEqual([]);
   });
 
   it("returns slot end = start + duration (buffers excluded)", () => {
-    const q = query({ service: { durationMinutes: 50, bufferBeforeMinutes: 5, bufferAfterMinutes: 10 } });
+    const q = query({
+      service: { durationMinutes: 50, bufferBeforeMinutes: 5, bufferAfterMinutes: 10 },
+    });
     const [first] = computeSlots(q);
     expect(first!.end - first!.start).toBe(50 * 60_000);
   });
@@ -115,13 +130,20 @@ describe("computeSlots - breaks", () => {
   it("removes slots that would *run into* a break, not only start in it", () => {
     const q = query({
       policy: { slotIntervalMinutes: 30, minNoticeMinutes: 0, maxAdvanceDays: 365 },
-      staff: [staff({ weeklyHours: everyDay("12:00", "15:00"), weeklyBreaks: everyDay("13:00", "13:30") })],
+      staff: [
+        staff({
+          weeklyHours: everyDay("12:00", "15:00"),
+          weeklyBreaks: everyDay("13:00", "13:30"),
+        }),
+      ],
     });
     expect(times(q)).toEqual(["12:00", "13:30", "14:00"]);
   });
 
   it("only applies breaks on their own weekday", () => {
-    const q = query({ staff: [staff({ weeklyBreaks: [{ weekday: 2, start: "09:00", end: "17:00" }] })] });
+    const q = query({
+      staff: [staff({ weeklyBreaks: [{ weekday: 2, start: "09:00", end: "17:00" }] })],
+    });
     expect(times(q)).toHaveLength(8);
   });
 });
@@ -129,7 +151,11 @@ describe("computeSlots - breaks", () => {
 describe("computeSlots - date overrides and holidays", () => {
   it("replaces weekly hours for that date", () => {
     const q = query({
-      staff: [staff({ dateOverrides: [{ date: "2026-03-09", windows: [{ start: "10:00", end: "12:00" }] }] })],
+      staff: [
+        staff({
+          dateOverrides: [{ date: "2026-03-09", windows: [{ start: "10:00", end: "12:00" }] }],
+        }),
+      ],
     });
     expect(times(q)).toEqual(["10:00", "11:00"]);
   });
@@ -181,7 +207,11 @@ describe("computeSlots - date overrides and holidays", () => {
 describe("computeSlots - time off", () => {
   it("removes a partial-day absence", () => {
     const q = query({
-      staff: [staff({ timeOff: [{ start: at(BA, "2026-03-09T10:30"), end: at(BA, "2026-03-09T12:00") }] })],
+      staff: [
+        staff({
+          timeOff: [{ start: at(BA, "2026-03-09T10:30"), end: at(BA, "2026-03-09T12:00") }],
+        }),
+      ],
     });
     expect(times(q)).toEqual(["09:00", "12:00", "13:00", "14:00", "15:00", "16:00"]);
   });
@@ -190,7 +220,11 @@ describe("computeSlots - time off", () => {
     const q = query({
       from: "2026-03-09",
       to: "2026-03-13",
-      staff: [staff({ timeOff: [{ start: at(BA, "2026-03-08T00:00"), end: at(BA, "2026-03-12T00:00") }] })],
+      staff: [
+        staff({
+          timeOff: [{ start: at(BA, "2026-03-08T00:00"), end: at(BA, "2026-03-12T00:00") }],
+        }),
+      ],
     });
     const slots = computeSlots(q);
     expect(slots).toHaveLength(16); // only the 12th and 13th remain
@@ -200,7 +234,11 @@ describe("computeSlots - time off", () => {
 
 describe("computeSlots - existing bookings and buffers", () => {
   it("skips a slot taken by an existing booking", () => {
-    const q = query({ staff: [staff({ busy: [{ start: at(BA, "2026-03-09T10:00"), end: at(BA, "2026-03-09T11:00") }] })] });
+    const q = query({
+      staff: [
+        staff({ busy: [{ start: at(BA, "2026-03-09T10:00"), end: at(BA, "2026-03-09T11:00") }] }),
+      ],
+    });
     expect(times(q)).not.toContain("10:00");
     expect(times(q)).toContain("11:00"); // touching ranges are fine
     expect(times(q)).toContain("09:00");
@@ -223,7 +261,9 @@ describe("computeSlots - existing bookings and buffers", () => {
   it("requires the after-buffer to be free of other bookings", () => {
     const q = query({
       service: { durationMinutes: 60, bufferBeforeMinutes: 0, bufferAfterMinutes: 15 },
-      staff: [staff({ busy: [{ start: at(BA, "2026-03-09T11:00"), end: at(BA, "2026-03-09T12:00") }] })],
+      staff: [
+        staff({ busy: [{ start: at(BA, "2026-03-09T11:00"), end: at(BA, "2026-03-09T12:00") }] }),
+      ],
     });
     // 10:00-11:00 + 15 min cleanup would collide with the 11:00 booking.
     expect(times(q)).not.toContain("10:00");
@@ -233,7 +273,9 @@ describe("computeSlots - existing bookings and buffers", () => {
   it("requires the before-buffer to be free of other bookings", () => {
     const q = query({
       service: { durationMinutes: 60, bufferBeforeMinutes: 10, bufferAfterMinutes: 0 },
-      staff: [staff({ busy: [{ start: at(BA, "2026-03-09T10:00"), end: at(BA, "2026-03-09T11:00") }] })],
+      staff: [
+        staff({ busy: [{ start: at(BA, "2026-03-09T10:00"), end: at(BA, "2026-03-09T11:00") }] }),
+      ],
     });
     expect(times(q)).not.toContain("11:00");
     expect(times(q)).toContain("12:00");
@@ -263,7 +305,9 @@ describe("computeSlots - existing bookings and buffers", () => {
 
   it("ignores bookings of other staff members", () => {
     const busyBob = [{ start: at(BA, "2026-03-09T09:00"), end: at(BA, "2026-03-09T17:00") }];
-    const q = query({ staff: [staff({ staffId: "alice" }), staff({ staffId: "bob", busy: busyBob })] });
+    const q = query({
+      staff: [staff({ staffId: "alice" }), staff({ staffId: "bob", busy: busyBob })],
+    });
     const slots = computeSlots(q);
     expect(new Set(slots.map((s) => s.staffId))).toEqual(new Set(["alice"]));
   });
@@ -278,7 +322,10 @@ describe("computeSlots - booking policy", () => {
   });
 
   it("applies minimum notice", () => {
-    const q = query({ now, policy: { slotIntervalMinutes: 60, minNoticeMinutes: 120, maxAdvanceDays: 365 } });
+    const q = query({
+      now,
+      policy: { slotIntervalMinutes: 60, minNoticeMinutes: 120, maxAdvanceDays: 365 },
+    });
     expect(times(q)[0]).toBe("13:00"); // 10:20 + 2h = 12:20 -> next grid slot 13:00
   });
 
@@ -304,7 +351,10 @@ describe("computeSlots - booking policy", () => {
 
 describe("computeSlots - time zones", () => {
   it("interprets hours in the org zone regardless of where the server runs", () => {
-    const q = query({ timeZone: "Asia/Tokyo", staff: [staff({ weeklyHours: everyDay("09:00", "10:00") })] });
+    const q = query({
+      timeZone: "Asia/Tokyo",
+      staff: [staff({ weeklyHours: everyDay("09:00", "10:00") })],
+    });
     const [slot] = computeSlots(q);
     expect(new Date(slot!.start).toISOString()).toBe("2026-03-09T00:00:00.000Z");
   });
@@ -316,14 +366,19 @@ describe("computeSlots - time zones", () => {
   });
 
   it("works for zones east of the date line", () => {
-    const q = query({ timeZone: "Pacific/Kiritimati", staff: [staff({ weeklyHours: everyDay("00:00", "01:00") })] });
+    const q = query({
+      timeZone: "Pacific/Kiritimati",
+      staff: [staff({ weeklyHours: everyDay("00:00", "01:00") })],
+    });
     const [slot] = computeSlots(q);
     // 00:00 on Mar 9 at UTC+14 is still Mar 8 in UTC.
     expect(new Date(slot!.start).toISOString()).toBe("2026-03-08T10:00:00.000Z");
   });
 
   it("rejects unknown zones", () => {
-    expect(() => computeSlots(query({ timeZone: "Mars/Olympus_Mons" }))).toThrow(AvailabilityInputError);
+    expect(() => computeSlots(query({ timeZone: "Mars/Olympus_Mons" }))).toThrow(
+      AvailabilityInputError,
+    );
   });
 });
 
@@ -331,7 +386,8 @@ describe("computeSlots - daylight saving time", () => {
   it("keeps 09:00-17:00 wall hours on the spring-forward day (7h not 8h of UTC shift)", () => {
     const q = query({ timeZone: NY, from: "2026-03-07", to: "2026-03-09" });
     const slots = computeSlots(q);
-    const firstOfDay = (date: string) => slots.find((s) => s.start >= at(NY, `${date}T00:00`))!.start;
+    const firstOfDay = (date: string) =>
+      slots.find((s) => s.start >= at(NY, `${date}T00:00`))!.start;
     expect(new Date(firstOfDay("2026-03-07")).toISOString()).toBe("2026-03-07T14:00:00.000Z"); // EST
     expect(new Date(firstOfDay("2026-03-08")).toISOString()).toBe("2026-03-08T13:00:00.000Z"); // EDT
     expect(slots.map((s) => localHHMM(s.start, NY)).filter((t) => t === "09:00")).toHaveLength(3);
@@ -379,7 +435,12 @@ describe("computeSlots - daylight saving time", () => {
       timeZone: NY,
       from: "2026-11-01",
       to: "2026-11-01",
-      staff: [staff({ weeklyHours: everyDay("00:00", "03:00"), busy: [{ start: firstOneAm, end: firstOneAm + 3_600_000 }] })],
+      staff: [
+        staff({
+          weeklyHours: everyDay("00:00", "03:00"),
+          busy: [{ start: firstOneAm, end: firstOneAm + 3_600_000 }],
+        }),
+      ],
     });
     const starts = computeSlots(q).map((s) => new Date(s.start).toISOString());
     expect(starts).not.toContain("2026-11-01T05:00:00.000Z");
@@ -417,7 +478,9 @@ describe("computeSlots - daylight saving time", () => {
       staff: [
         staff({
           weeklyHours: everyDay("00:00", "03:00"),
-          timeOff: [{ start: Date.parse("2026-11-01T06:00:00Z"), end: Date.parse("2026-11-01T07:00:00Z") }],
+          timeOff: [
+            { start: Date.parse("2026-11-01T06:00:00Z"), end: Date.parse("2026-11-01T07:00:00Z") },
+          ],
         }),
       ],
     });
@@ -472,11 +535,26 @@ describe("computeSlots - input validation", () => {
     ["from after to", { from: "2026-03-10", to: "2026-03-09" }],
     ["invalid date", { from: "2026-02-30" }],
     ["range too long", { from: "2026-01-01", to: "2026-12-31" }],
-    ["zero duration", { service: { durationMinutes: 0, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 } }],
-    ["negative buffer", { service: { durationMinutes: 30, bufferBeforeMinutes: -5, bufferAfterMinutes: 0 } }],
-    ["fractional interval", { policy: { slotIntervalMinutes: 7.5, minNoticeMinutes: 0, maxAdvanceDays: 30 } }],
-    ["inverted window", { staff: [staff({ weeklyHours: [{ weekday: 1, start: "17:00", end: "09:00" }] })] }],
-    ["malformed window", { staff: [staff({ weeklyBreaks: [{ weekday: 1, start: "1pm", end: "14:00" }] })] }],
+    [
+      "zero duration",
+      { service: { durationMinutes: 0, bufferBeforeMinutes: 0, bufferAfterMinutes: 0 } },
+    ],
+    [
+      "negative buffer",
+      { service: { durationMinutes: 30, bufferBeforeMinutes: -5, bufferAfterMinutes: 0 } },
+    ],
+    [
+      "fractional interval",
+      { policy: { slotIntervalMinutes: 7.5, minNoticeMinutes: 0, maxAdvanceDays: 30 } },
+    ],
+    [
+      "inverted window",
+      { staff: [staff({ weeklyHours: [{ weekday: 1, start: "17:00", end: "09:00" }] })] },
+    ],
+    [
+      "malformed window",
+      { staff: [staff({ weeklyBreaks: [{ weekday: 1, start: "1pm", end: "14:00" }] })] },
+    ],
   ])("rejects %s", (_label, overrides) => {
     expect(() => computeSlots(query(overrides))).toThrow(AvailabilityInputError);
   });

@@ -85,12 +85,23 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
     .toZonedDateTimeISO(org.timeZone)
     .toPlainDate()
     .toString();
-  const query = await loadAvailabilityQuery(tx, { org, service, staffIds: candidates, from: localDate, to: localDate, now });
+  const query = await loadAvailabilityQuery(tx, {
+    org,
+    service,
+    staffIds: candidates,
+    from: localDate,
+    to: localDate,
+    now,
+  });
 
   // "Any staff": prefer whoever has the fewest bookings that day.
   const ordered = input.staffId ? candidates : await orderByLoad(tx, candidates, org, localDate);
   const startMs = input.start.getTime();
-  const free = new Set(computeSlots(query).filter((s) => s.start === startMs).map((s) => s.staffId));
+  const free = new Set(
+    computeSlots(query)
+      .filter((s) => s.start === startMs)
+      .map((s) => s.staffId),
+  );
   const available = ordered.filter((id) => free.has(id));
   if (available.length === 0) throw slotUnavailable();
 
@@ -119,7 +130,9 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
               blockedUntil: new Date(endsAt.getTime() + service.bufferAfterMinutes * MINUTE),
               priceCents: service.priceCents,
               depositCents: needsDeposit ? service.depositCents : 0,
-              holdExpiresAt: needsDeposit ? new Date(now.getTime() + org.holdMinutes * MINUTE) : null,
+              holdExpiresAt: needsDeposit
+                ? new Date(now.getTime() + org.holdMinutes * MINUTE)
+                : null,
               customerTimeZone: input.customerTimeZone ?? null,
               notes: input.notes ?? null,
               accessToken: randomBytes(24).toString("base64url"),
@@ -135,7 +148,12 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
           action: "booking.created",
           targetType: "booking",
           targetId: booking.id,
-          metadata: { source: input.source, status: booking.status, staffId, serviceId: service.id },
+          metadata: {
+            source: input.source,
+            status: booking.status,
+            staffId,
+            serviceId: service.id,
+          },
         });
         return booking;
       } catch (err) {
@@ -160,14 +178,24 @@ export async function reserveSlot(tx: Tx, input: ReserveInput): Promise<Booking>
  */
 export async function lockStaffSchedules(tx: Tx, staffIds: readonly string[]): Promise<void> {
   for (const id of [...staffIds].sort()) {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`staff-schedule:${id}`}, 0))`);
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`staff-schedule:${id}`}, 0))`,
+    );
   }
 }
 
-async function orderByLoad(tx: Tx, staffIds: string[], org: Organization, localDate: string): Promise<string[]> {
-  const dayStart = new Date(Temporal.PlainDate.from(localDate).toZonedDateTime(org.timeZone).epochMilliseconds);
+async function orderByLoad(
+  tx: Tx,
+  staffIds: string[],
+  org: Organization,
+  localDate: string,
+): Promise<string[]> {
+  const dayStart = new Date(
+    Temporal.PlainDate.from(localDate).toZonedDateTime(org.timeZone).epochMilliseconds,
+  );
   const dayEnd = new Date(
-    Temporal.PlainDate.from(localDate).add({ days: 1 }).toZonedDateTime(org.timeZone).epochMilliseconds,
+    Temporal.PlainDate.from(localDate).add({ days: 1 }).toZonedDateTime(org.timeZone)
+      .epochMilliseconds,
   );
   const loads = await tx
     .select({ staffId: bookings.staffId, count: sql<number>`count(*)::int` })
@@ -202,7 +230,13 @@ export async function upsertCustomer(
 }
 
 async function scheduleConfirmationMessages(tx: Tx, booking: Booking, now: Date): Promise<void> {
-  await enqueue(tx, booking.orgId, "booking.confirmed", { bookingId: booking.id }, { dedupeKey: `confirmed:${booking.id}` });
+  await enqueue(
+    tx,
+    booking.orgId,
+    "booking.confirmed",
+    { bookingId: booking.id },
+    { dedupeKey: `confirmed:${booking.id}` },
+  );
   const reminderAt = booking.startsAt.getTime() - REMINDER_LEAD_MS;
   if (reminderAt > now.getTime()) {
     await enqueue(
@@ -254,12 +288,20 @@ export async function createPublicBooking(
       source: "public",
       now,
     });
-    const [service] = await tx.select({ name: services.name }).from(services).where(eq(services.id, booking.serviceId));
+    const [service] = await tx
+      .select({ name: services.name })
+      .from(services)
+      .where(eq(services.id, booking.serviceId));
     return { booking, org, serviceName: service?.name ?? "Appointment" };
   });
 
   if (booking.status !== "pending_payment") {
-    return { bookingId: booking.id, accessToken: booking.accessToken, status: booking.status, checkoutUrl: null };
+    return {
+      bookingId: booking.id,
+      accessToken: booking.accessToken,
+      status: booking.status,
+      checkoutUrl: null,
+    };
   }
 
   const provider = deps.payments ?? getPaymentProvider();
@@ -288,7 +330,12 @@ export async function createPublicBooking(
         currency: org.currency,
       }),
     );
-    return { bookingId: booking.id, accessToken: booking.accessToken, status: booking.status, checkoutUrl: session.url };
+    return {
+      bookingId: booking.id,
+      accessToken: booking.accessToken,
+      status: booking.status,
+      checkoutUrl: session.url,
+    };
   } catch (err) {
     await withTenant({ orgId }, (tx) =>
       tx
@@ -296,7 +343,9 @@ export async function createPublicBooking(
         .set({ status: "expired" })
         .where(and(eq(bookings.id, booking.id), eq(bookings.status, "pending_payment"))),
     );
-    throw new AppError("PAYMENT_FAILED", "We couldn't start the payment. Please try again.", { cause: err });
+    throw new AppError("PAYMENT_FAILED", "We couldn't start the payment. Please try again.", {
+      cause: err,
+    });
   }
 }
 
@@ -310,14 +359,19 @@ export async function loadOrg(tx: Tx, orgId: string): Promise<Organization> {
 // Payment confirmation (called from the idempotent webhook handler)
 // ---------------------------------------------------------------------------
 
-export type DepositOutcome = "confirmed" | "already_confirmed" | "refund_required" | "unknown_booking";
+export type DepositOutcome =
+  "confirmed" | "already_confirmed" | "refund_required" | "unknown_booking";
 
 export async function confirmDeposit(
   tx: Tx,
   event: { orgId: string; bookingId: string; externalId: string; provider: string },
   now = new Date(),
 ): Promise<DepositOutcome> {
-  const [booking] = await tx.select().from(bookings).where(eq(bookings.id, event.bookingId)).for("update");
+  const [booking] = await tx
+    .select()
+    .from(bookings)
+    .where(eq(bookings.id, event.bookingId))
+    .for("update");
   if (!booking) return "unknown_booking";
   const org = await loadOrg(tx, event.orgId);
 
@@ -332,7 +386,10 @@ export async function confirmDeposit(
       currency: org.currency,
       status: "succeeded",
     })
-    .onConflictDoUpdate({ target: [payments.provider, payments.externalId], set: { status: "succeeded" } })
+    .onConflictDoUpdate({
+      target: [payments.provider, payments.externalId],
+      set: { status: "succeeded" },
+    })
     .returning({ id: payments.id });
 
   if (booking.status === "confirmed") return "already_confirmed";
@@ -385,9 +442,19 @@ export async function expireHold(tx: Tx, bookingId: string): Promise<void> {
 
 export async function cancelBooking(
   tx: Tx,
-  params: { bookingId: string; by: "customer" | "business"; actorUserId: string | null; reason?: string; now?: Date },
+  params: {
+    bookingId: string;
+    by: "customer" | "business";
+    actorUserId: string | null;
+    reason?: string;
+    now?: Date;
+  },
 ): Promise<Booking> {
-  const [booking] = await tx.select().from(bookings).where(eq(bookings.id, params.bookingId)).for("update");
+  const [booking] = await tx
+    .select()
+    .from(bookings)
+    .where(eq(bookings.id, params.bookingId))
+    .for("update");
   if (!booking) throw notFound("Booking");
   if (booking.status === "cancelled" || booking.status === "expired") {
     throw new AppError("CONFLICT", "This booking is no longer active.");
@@ -402,7 +469,10 @@ export async function cancelBooking(
     .where(eq(bookings.id, booking.id))
     .returning();
   if (booking.status === "confirmed") {
-    await enqueue(tx, booking.orgId, "booking.cancelled", { bookingId: booking.id, cancelledBy: params.by });
+    await enqueue(tx, booking.orgId, "booking.cancelled", {
+      bookingId: booking.id,
+      cancelledBy: params.by,
+    });
   }
   await audit(tx, {
     orgId: booking.orgId,
@@ -435,7 +505,13 @@ export interface BookingRow {
 
 export async function listBookings(
   tx: Tx,
-  params: { from: Date; to: Date; staffId?: string; statuses?: Booking["status"][]; limit?: number },
+  params: {
+    from: Date;
+    to: Date;
+    staffId?: string;
+    statuses?: Booking["status"][];
+    limit?: number;
+  },
 ): Promise<BookingRow[]> {
   const conditions = [gte(bookings.startsAt, params.from), lt(bookings.startsAt, params.to)];
   if (params.staffId) conditions.push(eq(bookings.staffId, params.staffId));

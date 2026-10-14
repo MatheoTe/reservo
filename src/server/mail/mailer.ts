@@ -18,7 +18,11 @@ export class SmtpMailer implements Mailer {
     options: { host: string; port: number },
     private readonly from: string,
   ) {
-    this.transport = nodemailer.createTransport({ host: options.host, port: options.port, secure: false });
+    this.transport = nodemailer.createTransport({
+      host: options.host,
+      port: options.port,
+      secure: false,
+    });
   }
 
   async send(message: EmailMessage): Promise<void> {
@@ -48,7 +52,10 @@ export function getMailer(): Mailer {
       process.env.MAIL_TRANSPORT === "memory"
         ? new MemoryMailer()
         : new SmtpMailer(
-            { host: process.env.SMTP_HOST ?? "localhost", port: Number(process.env.SMTP_PORT ?? 1025) },
+            {
+              host: process.env.SMTP_HOST ?? "localhost",
+              port: Number(process.env.SMTP_PORT ?? 1025),
+            },
             process.env.EMAIL_FROM ?? "Reservo <no-reply@reservo.local>",
           );
   }

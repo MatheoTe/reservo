@@ -32,7 +32,13 @@ export interface CheckoutSession {
 export type PaymentEvent =
   | { id: string; type: "deposit.succeeded"; orgId: string; bookingId: string; externalId: string }
   | { id: string; type: "deposit.expired"; orgId: string; bookingId: string; externalId: string }
-  | { id: string; type: "subscription.activated"; orgId: string; customerId: string; subscriptionId: string }
+  | {
+      id: string;
+      type: "subscription.activated";
+      orgId: string;
+      customerId: string;
+      subscriptionId: string;
+    }
   | { id: string; type: "subscription.cancelled"; orgId: string; subscriptionId: string }
   | { id: string; type: "ignored"; providerType: string };
 

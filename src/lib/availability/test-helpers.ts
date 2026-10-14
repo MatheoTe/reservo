@@ -4,7 +4,8 @@ import type { AvailabilityQuery, IsoWeekday, StaffSchedule, WeeklyWindow } from 
 
 /** Epoch ms for a wall-clock time in a zone, e.g. at("Europe/Madrid", "2026-03-29T10:00"). */
 export function at(timeZone: string, local: string): number {
-  return Temporal.PlainDateTime.from(local).toZonedDateTime(timeZone, { disambiguation: "reject" }).epochMilliseconds;
+  return Temporal.PlainDateTime.from(local).toZonedDateTime(timeZone, { disambiguation: "reject" })
+    .epochMilliseconds;
 }
 
 export function iso(epochMs: number): string {
@@ -18,7 +19,11 @@ export function localHHMM(epochMs: number, timeZone: string): string {
 
 export const ALL_DAYS: IsoWeekday[] = [1, 2, 3, 4, 5, 6, 7];
 
-export function everyDay(start: string, end: string, days: IsoWeekday[] = ALL_DAYS): WeeklyWindow[] {
+export function everyDay(
+  start: string,
+  end: string,
+  days: IsoWeekday[] = ALL_DAYS,
+): WeeklyWindow[] {
   return days.map((weekday) => ({ weekday, start, end }));
 }
 

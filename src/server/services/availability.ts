@@ -38,7 +38,11 @@ export interface BookableStaff {
 /** Active staff members who offer the service, in a stable order. */
 export async function staffForService(tx: Tx, serviceId: string): Promise<BookableStaff[]> {
   return tx
-    .select({ id: staffMembers.id, displayName: staffMembers.displayName, color: staffMembers.color })
+    .select({
+      id: staffMembers.id,
+      displayName: staffMembers.displayName,
+      color: staffMembers.color,
+    })
     .from(staffMembers)
     .innerJoin(staffServices, eq(staffServices.staffId, staffMembers.id))
     .where(and(eq(staffServices.serviceId, serviceId), eq(staffMembers.active, true)))
@@ -61,7 +65,14 @@ export async function activeService(tx: Tx, serviceId: string): Promise<Service>
  */
 export async function loadAvailabilityQuery(
   tx: Tx,
-  params: { org: Organization; service: Service; staffIds: string[]; from: string; to: string; now: Date },
+  params: {
+    org: Organization;
+    service: Service;
+    staffIds: string[];
+    from: string;
+    to: string;
+    now: Date;
+  },
 ): Promise<AvailabilityQuery> {
   const { org, service, staffIds, from, to, now } = params;
   const base: Omit<AvailabilityQuery, "staff" | "closedDates"> = {
@@ -83,9 +94,12 @@ export async function loadAvailabilityQuery(
   if (staffIds.length === 0) return { ...base, staff: [], closedDates: [] };
 
   const rangeStart = new Date(
-    Temporal.PlainDate.from(from).subtract({ days: 1 }).toZonedDateTime(org.timeZone).epochMilliseconds,
+    Temporal.PlainDate.from(from).subtract({ days: 1 }).toZonedDateTime(org.timeZone)
+      .epochMilliseconds,
   );
-  const rangeEnd = new Date(Temporal.PlainDate.from(to).add({ days: 2 }).toZonedDateTime(org.timeZone).epochMilliseconds);
+  const rangeEnd = new Date(
+    Temporal.PlainDate.from(to).add({ days: 2 }).toZonedDateTime(org.timeZone).epochMilliseconds,
+  );
   const nowIso = now.toISOString();
 
   const [hours, breakRows, overrides, absences, closed, busy] = await Promise.all([
@@ -94,7 +108,13 @@ export async function loadAvailabilityQuery(
     tx
       .select()
       .from(dateOverrides)
-      .where(and(inArray(dateOverrides.staffId, staffIds), gte(dateOverrides.date, from), lte(dateOverrides.date, to))),
+      .where(
+        and(
+          inArray(dateOverrides.staffId, staffIds),
+          gte(dateOverrides.date, from),
+          lte(dateOverrides.date, to),
+        ),
+      ),
     tx
       .select()
       .from(timeOff)
@@ -105,9 +125,16 @@ export async function loadAvailabilityQuery(
           gt(timeOff.endsAt, rangeStart),
         ),
       ),
-    tx.select({ date: holidays.date }).from(holidays).where(and(gte(holidays.date, from), lte(holidays.date, to))),
     tx
-      .select({ staffId: bookings.staffId, from: bookings.blockedFrom, until: bookings.blockedUntil })
+      .select({ date: holidays.date })
+      .from(holidays)
+      .where(and(gte(holidays.date, from), lte(holidays.date, to))),
+    tx
+      .select({
+        staffId: bookings.staffId,
+        from: bookings.blockedFrom,
+        until: bookings.blockedUntil,
+      })
       .from(bookings)
       .where(
         and(
@@ -126,22 +153,33 @@ export async function loadAvailabilityQuery(
     const overridesByDate = new Map<string, DateOverride>();
     for (const o of overrides.filter((r) => r.staffId === staffId)) {
       const entry = overridesByDate.get(o.date) ?? { date: o.date, windows: [] };
-      if (o.startTime && o.endTime) entry.windows.push({ start: hhmm(o.startTime), end: hhmm(o.endTime) });
+      if (o.startTime && o.endTime)
+        entry.windows.push({ start: hhmm(o.startTime), end: hhmm(o.endTime) });
       overridesByDate.set(o.date, entry);
     }
     return {
       staffId,
       weeklyHours: hours
         .filter((h) => h.staffId === staffId)
-        .map((h) => ({ weekday: h.weekday as IsoWeekday, start: hhmm(h.startTime), end: hhmm(h.endTime) })),
+        .map((h) => ({
+          weekday: h.weekday as IsoWeekday,
+          start: hhmm(h.startTime),
+          end: hhmm(h.endTime),
+        })),
       weeklyBreaks: breakRows
         .filter((b) => b.staffId === staffId)
-        .map((b) => ({ weekday: b.weekday as IsoWeekday, start: hhmm(b.startTime), end: hhmm(b.endTime) })),
+        .map((b) => ({
+          weekday: b.weekday as IsoWeekday,
+          start: hhmm(b.startTime),
+          end: hhmm(b.endTime),
+        })),
       dateOverrides: [...overridesByDate.values()],
       timeOff: absences
         .filter((a) => a.staffId === null || a.staffId === staffId)
         .map((a) => ({ start: a.startsAt.getTime(), end: a.endsAt.getTime() })),
-      busy: busy.filter((b) => b.staffId === staffId).map((b) => ({ start: b.from.getTime(), end: b.until.getTime() })),
+      busy: busy
+        .filter((b) => b.staffId === staffId)
+        .map((b) => ({ start: b.from.getTime(), end: b.until.getTime() })),
     };
   });
 
@@ -150,7 +188,14 @@ export async function loadAvailabilityQuery(
 
 export async function computeAvailability(
   tx: Tx,
-  params: { org: Organization; serviceId: string; staffId?: string; from: string; to: string; now: Date },
+  params: {
+    org: Organization;
+    serviceId: string;
+    staffId?: string;
+    from: string;
+    to: string;
+    now: Date;
+  },
 ): Promise<{ slots: Slot[]; staff: BookableStaff[] }> {
   const service = await activeService(tx, params.serviceId);
   const offering = await staffForService(tx, service.id);

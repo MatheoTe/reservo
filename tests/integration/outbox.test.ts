@@ -10,7 +10,14 @@ import { inviteMember } from "@/server/services/team";
 import { createHandlers } from "@/worker/handlers";
 import { processOutboxBatch, runMaintenance } from "@/worker/processor";
 
-import { admin, createTestOrg, insertBookingDirect, type TestOrg, tomorrowAt, useCleanDatabase } from "./helpers";
+import {
+  admin,
+  createTestOrg,
+  insertBookingDirect,
+  type TestOrg,
+  tomorrowAt,
+  useCleanDatabase,
+} from "./helpers";
 
 const noJitterFast = { baseMs: 1_000, maxMs: 60_000, jitter: 0 };
 
@@ -23,7 +30,11 @@ describe("transactional outbox + worker", () => {
   beforeEach(async () => {
     org = await createTestOrg("dental");
     mailer = new MemoryMailer();
-    handlers = createHandlers({ mailer, payments: new FakePaymentProvider("http://x", "s"), appUrl: "https://reservo.test" });
+    handlers = createHandlers({
+      mailer,
+      payments: new FakePaymentProvider("http://x", "s"),
+      appUrl: "https://reservo.test",
+    });
   });
 
   async function book(hour: number) {
@@ -44,7 +55,9 @@ describe("transactional outbox + worker", () => {
 
   it("a rolled-back transaction leaves no message behind", async () => {
     await withTenant({ orgId: org.orgId }, async (tx) => {
-      await enqueue(tx, org.orgId, "booking.confirmed", { bookingId: "00000000-0000-4000-8000-000000000001" });
+      await enqueue(tx, org.orgId, "booking.confirmed", {
+        bookingId: "00000000-0000-4000-8000-000000000001",
+      });
       throw new Error("boom");
     }).catch(() => undefined);
     expect(await admin`select * from outbox`).toHaveLength(0);
@@ -58,9 +71,12 @@ describe("transactional outbox + worker", () => {
     expect(mailer.sent[0]!.to).toBe("eva@example.com");
     // Org is in Buenos Aires; the customer booked from Madrid and reads Madrid time.
     expect(mailer.sent[0]!.subject).toContain(formatDateTime(tomorrowAt(10), "Europe/Madrid"));
-    expect(mailer.sent[0]!.subject).not.toContain(formatDateTime(tomorrowAt(10), "America/Argentina/Buenos_Aires"));
+    expect(mailer.sent[0]!.subject).not.toContain(
+      formatDateTime(tomorrowAt(10), "America/Argentina/Buenos_Aires"),
+    );
     expect(mailer.sent[0]!.text).toContain("https://reservo.test/b/dental/bookings/");
-    const [msg] = await admin`select status, processed_at from outbox where topic = 'booking.confirmed'`;
+    const [msg] =
+      await admin`select status, processed_at from outbox where topic = 'booking.confirmed'`;
     expect(msg!.status).toBe("done");
     expect(msg!.processed_at).not.toBeNull();
   });
@@ -68,7 +84,8 @@ describe("transactional outbox + worker", () => {
   it("does not deliver a reminder before it is due", async () => {
     await book(10);
     await processOutboxBatch(handlers);
-    const [reminder] = await admin`select status, available_at from outbox where topic = 'booking.reminder'`;
+    const [reminder] =
+      await admin`select status, available_at from outbox where topic = 'booking.reminder'`;
     expect(reminder!.status).toBe("pending");
     expect(new Date(reminder!.available_at).getTime()).toBeGreaterThan(Date.now());
   });
@@ -82,7 +99,8 @@ describe("transactional outbox + worker", () => {
       const before = Date.now();
       const r = await processOutboxBatch(handlers, { backoff: noJitterFast });
       expect(r.claimed).toBe(1);
-      const [m] = await admin`select status, attempts, available_at, last_error from outbox where topic = 'booking.confirmed'`;
+      const [m] =
+        await admin`select status, attempts, available_at, last_error from outbox where topic = 'booking.confirmed'`;
       expect(m!.attempts).toBe(attempt);
       expect(m!.last_error).toMatch(/Simulated SMTP failure/);
       if (attempt < 3) {
@@ -100,7 +118,10 @@ describe("transactional outbox + worker", () => {
 
   it("two workers polling concurrently never deliver the same message twice", async () => {
     for (const h of [9, 10, 11, 12, 13, 14]) await book(h);
-    const [a, b] = await Promise.all([processOutboxBatch(handlers, { batchSize: 50 }), processOutboxBatch(handlers, { batchSize: 50 })]);
+    const [a, b] = await Promise.all([
+      processOutboxBatch(handlers, { batchSize: 50 }),
+      processOutboxBatch(handlers, { batchSize: 50 }),
+    ]);
     expect(a.claimed + b.claimed).toBe(6);
     expect(mailer.sent).toHaveLength(6);
   });
@@ -116,7 +137,9 @@ describe("transactional outbox + worker", () => {
 
   it("skips the email when the booking was cancelled before delivery", async () => {
     const booking = await insertBookingDirect(org, { start: tomorrowAt(15) });
-    await withTenant({ orgId: org.orgId }, (tx) => enqueue(tx, org.orgId, "booking.confirmed", { bookingId: booking.id }));
+    await withTenant({ orgId: org.orgId }, (tx) =>
+      enqueue(tx, org.orgId, "booking.confirmed", { bookingId: booking.id }),
+    );
     await admin`update bookings set status = 'cancelled' where id = ${booking.id}`;
     await processOutboxBatch(handlers);
     expect(mailer.sent).toHaveLength(0);
@@ -130,22 +153,39 @@ describe("transactional outbox + worker", () => {
 
   it("scrubs the invitation token from the row once the email is sent", async () => {
     await withTenant({ orgId: org.orgId, userId: org.owner.id }, (tx) =>
-      inviteMember(tx, { orgId: org.orgId, userId: org.owner.id, role: "owner" }, { email: "new@example.com", role: "staff" }),
+      inviteMember(
+        tx,
+        { orgId: org.orgId, userId: org.owner.id, role: "owner" },
+        { email: "new@example.com", role: "staff" },
+      ),
     );
     const [before] = await admin`select payload from outbox where topic = 'invitation.created'`;
     expect(before!.payload.token).toBeTruthy();
     await processOutboxBatch(handlers);
     expect(mailer.sent[0]!.text).toContain(`/invite/${before!.payload.token}`);
-    const [after] = await admin`select payload, status from outbox where topic = 'invitation.created'`;
+    const [after] =
+      await admin`select payload, status from outbox where topic = 'invitation.created'`;
     expect(after!.status).toBe("done");
     expect(after!.payload.token).toBeUndefined();
   });
 
   it("maintenance expires abandoned holds across tenants", async () => {
     const other = await createTestOrg("vet");
-    await insertBookingDirect(org, { start: tomorrowAt(9), status: "pending_payment", holdExpiresAt: new Date(Date.now() - 1000) });
-    await insertBookingDirect(other, { start: tomorrowAt(9), status: "pending_payment", holdExpiresAt: new Date(Date.now() - 1000) });
-    await insertBookingDirect(other, { start: tomorrowAt(11), status: "pending_payment", holdExpiresAt: new Date(Date.now() + 600_000) });
+    await insertBookingDirect(org, {
+      start: tomorrowAt(9),
+      status: "pending_payment",
+      holdExpiresAt: new Date(Date.now() - 1000),
+    });
+    await insertBookingDirect(other, {
+      start: tomorrowAt(9),
+      status: "pending_payment",
+      holdExpiresAt: new Date(Date.now() - 1000),
+    });
+    await insertBookingDirect(other, {
+      start: tomorrowAt(11),
+      status: "pending_payment",
+      holdExpiresAt: new Date(Date.now() + 600_000),
+    });
     expect((await runMaintenance()).expiredHolds).toBe(2);
   });
 });

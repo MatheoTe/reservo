@@ -16,7 +16,10 @@ import type { Actor } from "../services/team";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
-  | { ok: false; error: { code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> } };
+  | {
+      ok: false;
+      error: { code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> };
+    };
 
 export interface OrgActionContext<I> {
   tx: Tx;
@@ -54,7 +57,13 @@ export async function runOrgAction<S extends z.ZodType, R>(
         .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, user.id)));
       if (!membership) throw notFound("Organization");
       if (!can(membership.role, permission)) throw forbidden();
-      return handler({ tx, actor: { orgId, userId: user.id, role: membership.role }, user, input, ip });
+      return handler({
+        tx,
+        actor: { orgId, userId: user.id, role: membership.role },
+        user,
+        input,
+        ip,
+      });
     });
     return { ok: true, data };
   } catch (err) {
@@ -62,8 +71,14 @@ export async function runOrgAction<S extends z.ZodType, R>(
   }
 }
 
-export function toActionError(err: unknown): { ok: false; error: { code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> } } {
+export function toActionError(err: unknown): {
+  ok: false;
+  error: { code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> };
+} {
   const appError = toAppError(err);
   if (appError.code === "INTERNAL") console.error("[action] unhandled error", err);
-  return { ok: false, error: { code: appError.code, message: appError.message, fieldErrors: appError.fieldErrors } };
+  return {
+    ok: false,
+    error: { code: appError.code, message: appError.message, fieldErrors: appError.fieldErrors },
+  };
 }

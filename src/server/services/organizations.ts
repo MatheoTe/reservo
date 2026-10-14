@@ -9,7 +9,11 @@ import { audit } from "../audit";
 import { type TenantContext, withTenant, withUser } from "../db/tenant";
 import { conflict, isPgError, PG } from "../errors";
 
-export const DEFAULT_HOURS = [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start: "09:00", end: "17:00" }));
+export const DEFAULT_HOURS = [1, 2, 3, 4, 5].map((weekday) => ({
+  weekday,
+  start: "09:00",
+  end: "17:00",
+}));
 
 /**
  * Creates an organization with its owner. The id is generated up front so the
@@ -36,10 +40,22 @@ export async function createOrganization(
         .insert(staffMembers)
         .values({ orgId, userId: user.id, displayName: user.name, email: user.email })
         .returning({ id: staffMembers.id });
-      await tx
-        .insert(workingHours)
-        .values(DEFAULT_HOURS.map((h) => ({ orgId, staffId: staff!.id, weekday: h.weekday, startTime: h.start, endTime: h.end })));
-      await audit(tx, { orgId, actorUserId: user.id, action: "org.created", targetType: "organization", targetId: orgId });
+      await tx.insert(workingHours).values(
+        DEFAULT_HOURS.map((h) => ({
+          orgId,
+          staffId: staff!.id,
+          weekday: h.weekday,
+          startTime: h.start,
+          endTime: h.end,
+        })),
+      );
+      await audit(tx, {
+        orgId,
+        actorUserId: user.id,
+        action: "org.created",
+        targetType: "organization",
+        targetId: orgId,
+      });
       return { id: orgId, slug: input.slug };
     });
   } catch (err) {
@@ -61,7 +77,12 @@ export interface UserOrganization {
 export async function listUserOrganizations(userId: string): Promise<UserOrganization[]> {
   return withUser(userId, (tx) =>
     tx
-      .select({ id: organizations.id, slug: organizations.slug, name: organizations.name, role: memberships.role })
+      .select({
+        id: organizations.id,
+        slug: organizations.slug,
+        name: organizations.name,
+        role: memberships.role,
+      })
       .from(memberships)
       .innerJoin(organizations, eq(organizations.id, memberships.orgId))
       .where(eq(memberships.userId, userId))

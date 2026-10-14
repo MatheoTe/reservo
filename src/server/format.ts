@@ -17,9 +17,17 @@ export function formatDateTime(date: Date, timeZone: string, locale = "en-US"): 
 }
 
 export function formatTime(date: Date, timeZone: string, locale = "en-US"): string {
-  return new Intl.DateTimeFormat(locale, { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
+  return new Intl.DateTimeFormat(locale, {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
 }
 
 export function formatMoney(cents: number, currency: string, locale = "en-US"): string {
-  return new Intl.NumberFormat(locale, { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100);
 }

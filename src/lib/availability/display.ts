@@ -12,7 +12,10 @@ export interface DayGroup<T> {
   items: T[];
 }
 
-export function groupByLocalDate<T extends { start: number }>(items: readonly T[], timeZone: string): DayGroup<T>[] {
+export function groupByLocalDate<T extends { start: number }>(
+  items: readonly T[],
+  timeZone: string,
+): DayGroup<T>[] {
   const groups = new Map<string, T[]>();
   for (const item of items) {
     const key = localDate(item.start, timeZone);
@@ -26,7 +29,10 @@ export function groupByLocalDate<T extends { start: number }>(items: readonly T[
 }
 
 export function localDate(epochMs: number, timeZone: string): string {
-  return Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(timeZone).toPlainDate().toString();
+  return Temporal.Instant.fromEpochMilliseconds(epochMs)
+    .toZonedDateTimeISO(timeZone)
+    .toPlainDate()
+    .toString();
 }
 
 /** "14:30" in the given zone. Deterministic (no locale data needed). */

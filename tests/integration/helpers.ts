@@ -4,7 +4,15 @@ import { eq } from "drizzle-orm";
 import postgres from "postgres";
 import { afterAll, beforeEach } from "vitest";
 
-import { bookings, customers, organizations, services, staffMembers, staffServices, workingHours } from "@/db/schema";
+import {
+  bookings,
+  customers,
+  organizations,
+  services,
+  staffMembers,
+  staffServices,
+  workingHours,
+} from "@/db/schema";
 import { closeDb } from "@/server/db/client";
 import { withTenant } from "@/server/db/tenant";
 import { createOrganization } from "@/server/services/organizations";
@@ -13,9 +21,28 @@ import { createOrganization } from "@/server/services/organizations";
 export const admin = postgres(process.env.TEST_DATABASE_ADMIN_URL!, { max: 4, onnotice: () => {} });
 
 const TABLES = [
-  "audit_log", "outbox", "webhook_events", "payments", "bookings", "customers", "holidays", "time_off",
-  "date_overrides", "breaks", "working_hours", "staff_services", "services", "staff_members", "invitations",
-  "memberships", "organizations", "rate_limits", "auth_sessions", "auth_accounts", "auth_verifications", "auth_users",
+  "audit_log",
+  "outbox",
+  "webhook_events",
+  "payments",
+  "bookings",
+  "customers",
+  "holidays",
+  "time_off",
+  "date_overrides",
+  "breaks",
+  "working_hours",
+  "staff_services",
+  "services",
+  "staff_members",
+  "invitations",
+  "memberships",
+  "organizations",
+  "rate_limits",
+  "auth_sessions",
+  "auth_accounts",
+  "auth_verifications",
+  "auth_users",
 ];
 
 export function useCleanDatabase() {
@@ -27,7 +54,10 @@ export function useCleanDatabase() {
   });
 }
 
-export async function createUser(name: string, email = `${name.toLowerCase().replaceAll(" ", ".")}@example.com`) {
+export async function createUser(
+  name: string,
+  email = `${name.toLowerCase().replaceAll(" ", ".")}@example.com`,
+) {
   const id = randomUUID();
   await admin`insert into auth_users ${admin({ id, name, email, email_verified: true })}`;
   return { id, name, email };
@@ -47,7 +77,12 @@ export interface TestOrg {
  */
 export async function createTestOrg(
   slug: string,
-  opts: { timeZone?: string; depositCents?: number; bufferAfterMinutes?: number; minNoticeMinutes?: number } = {},
+  opts: {
+    timeZone?: string;
+    depositCents?: number;
+    bufferAfterMinutes?: number;
+    minNoticeMinutes?: number;
+  } = {},
 ): Promise<TestOrg> {
   const owner = await createUser(`Owner ${slug}`, `owner@${slug}.test`);
   const { id: orgId } = await createOrganization(owner, {
@@ -59,9 +94,15 @@ export async function createTestOrg(
   return withTenant({ orgId, userId: owner.id }, async (tx) => {
     const [staff] = await tx.select().from(staffMembers).where(eq(staffMembers.userId, owner.id));
     await tx.delete(workingHours).where(eq(workingHours.staffId, staff!.id));
-    await tx
-      .insert(workingHours)
-      .values([1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ orgId, staffId: staff!.id, weekday, startTime: "09:00", endTime: "17:00" })));
+    await tx.insert(workingHours).values(
+      [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+        orgId,
+        staffId: staff!.id,
+        weekday,
+        startTime: "09:00",
+        endTime: "17:00",
+      })),
+    );
     const [service] = await tx
       .insert(services)
       .values({
@@ -75,30 +116,54 @@ export async function createTestOrg(
       .returning();
     await tx.insert(staffServices).values({ orgId, staffId: staff!.id, serviceId: service!.id });
     // Zero notice by default so tests can book "tomorrow" without caring about the clock.
-    await tx.update(organizations).set({ minNoticeMinutes: opts.minNoticeMinutes ?? 0 }).where(eq(organizations.id, orgId));
+    await tx
+      .update(organizations)
+      .set({ minNoticeMinutes: opts.minNoticeMinutes ?? 0 })
+      .where(eq(organizations.id, orgId));
     return { orgId, slug, owner, ownerStaffId: staff!.id, serviceId: service!.id };
   });
 }
 
 export async function addStaff(org: TestOrg, name: string) {
   return withTenant({ orgId: org.orgId }, async (tx) => {
-    const [staff] = await tx.insert(staffMembers).values({ orgId: org.orgId, displayName: name }).returning();
+    const [staff] = await tx
+      .insert(staffMembers)
+      .values({ orgId: org.orgId, displayName: name })
+      .returning();
+    await tx.insert(workingHours).values(
+      [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+        orgId: org.orgId,
+        staffId: staff!.id,
+        weekday,
+        startTime: "09:00",
+        endTime: "17:00",
+      })),
+    );
     await tx
-      .insert(workingHours)
-      .values([1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ orgId: org.orgId, staffId: staff!.id, weekday, startTime: "09:00", endTime: "17:00" })));
-    await tx.insert(staffServices).values({ orgId: org.orgId, staffId: staff!.id, serviceId: org.serviceId });
+      .insert(staffServices)
+      .values({ orgId: org.orgId, staffId: staff!.id, serviceId: org.serviceId });
     return staff!;
   });
 }
 
 export async function insertBookingDirect(
   org: TestOrg,
-  params: { staffId?: string; start: Date; minutes?: number; status?: "confirmed" | "pending_payment" | "cancelled" | "expired"; holdExpiresAt?: Date | null },
+  params: {
+    staffId?: string;
+    start: Date;
+    minutes?: number;
+    status?: "confirmed" | "pending_payment" | "cancelled" | "expired";
+    holdExpiresAt?: Date | null;
+  },
 ) {
   return withTenant({ orgId: org.orgId }, async (tx) => {
     const [customer] = await tx
       .insert(customers)
-      .values({ orgId: org.orgId, name: "Direct Customer", email: `direct-${randomUUID()}@example.com` })
+      .values({
+        orgId: org.orgId,
+        name: "Direct Customer",
+        email: `direct-${randomUUID()}@example.com`,
+      })
       .returning();
     const end = new Date(params.start.getTime() + (params.minutes ?? 60) * 60_000);
     const status = params.status ?? "confirmed";
@@ -116,7 +181,9 @@ export async function insertBookingDirect(
         blockedFrom: params.start,
         blockedUntil: end,
         priceCents: 5000,
-        holdExpiresAt: params.holdExpiresAt ?? (status === "pending_payment" ? new Date(Date.now() + 15 * 60_000) : null),
+        holdExpiresAt:
+          params.holdExpiresAt ??
+          (status === "pending_payment" ? new Date(Date.now() + 15 * 60_000) : null),
         accessToken: randomUUID(),
       })
       .returning();

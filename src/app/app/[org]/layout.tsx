@@ -3,13 +3,19 @@ import { listUserOrganizations } from "@/server/services/organizations";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
 
-export default async function OrgLayout({ children, params }: { children: React.ReactNode; params: Promise<{ org: string }> }) {
+export default async function OrgLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ org: string }>;
+}) {
   const { org: slug } = await params;
   const ctx = await getOrgContext(slug);
   const orgs = await listUserOrganizations(ctx.user.id);
 
   return (
-    <div className="min-h-dvh bg-muted/30 lg:grid lg:grid-cols-[248px_1fr]">
+    <div className="bg-muted/30 min-h-dvh lg:grid lg:grid-cols-[248px_1fr]">
       <Sidebar
         org={{ slug: ctx.org.slug, name: ctx.org.name, plan: ctx.org.plan }}
         orgs={orgs.map((o) => ({ slug: o.slug, name: o.name }))}

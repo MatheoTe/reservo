@@ -15,7 +15,17 @@ export const slugSchema = z
   .max(48, "At most 48 characters")
   .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])$/, "Lowercase letters, numbers and dashes only");
 
-export const RESERVED_SLUGS = new Set(["app", "api", "admin", "b", "sign-in", "sign-up", "invite", "onboarding", "www"]);
+export const RESERVED_SLUGS = new Set([
+  "app",
+  "api",
+  "admin",
+  "b",
+  "sign-in",
+  "sign-up",
+  "invite",
+  "onboarding",
+  "www",
+]);
 
 export const timeZoneSchema = z.string().refine((tz) => {
   try {
@@ -28,7 +38,12 @@ export const timeZoneSchema = z.string().refine((tz) => {
 
 export const isoDateSchema = z.iso.date();
 export const wallTimeSchema = z.string().regex(WALL_TIME, "Use HH:MM");
-export const emailSchema = z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email"));
+export const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(254)
+  .pipe(z.email("Enter a valid email"));
 
 export const createOrganizationSchema = z.object({
   name: z.string().trim().min(2, "At least 2 characters").max(80),
@@ -41,7 +56,11 @@ export const orgSettingsSchema = z.object({
   name: z.string().trim().min(2).max(80),
   timeZone: timeZoneSchema,
   slotIntervalMinutes: z.coerce.number().int().min(5).max(240),
-  minNoticeMinutes: z.coerce.number().int().min(0).max(60 * 24 * 14),
+  minNoticeMinutes: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(60 * 24 * 14),
   maxAdvanceDays: z.coerce.number().int().min(1).max(365),
 });
 
@@ -50,7 +69,12 @@ const minutes = (max: number) => z.coerce.number().int().min(0).max(max);
 export const serviceSchema = z
   .object({
     name: z.string().trim().min(2, "At least 2 characters").max(80),
-    description: z.string().trim().max(500).optional().transform((v) => v || null),
+    description: z
+      .string()
+      .trim()
+      .max(500)
+      .optional()
+      .transform((v) => v || null),
     durationMinutes: z.coerce.number().int().min(5, "At least 5 minutes").max(720),
     priceCents: z.coerce.number().int().min(0).max(10_000_000),
     depositCents: z.coerce.number().int().min(0).max(10_000_000),
@@ -58,7 +82,10 @@ export const serviceSchema = z
     bufferAfterMinutes: minutes(240),
     staffIds: z.array(z.uuid()).default([]),
   })
-  .refine((s) => s.depositCents <= s.priceCents, { path: ["depositCents"], message: "Deposit can't exceed the price" });
+  .refine((s) => s.depositCents <= s.priceCents, {
+    path: ["depositCents"],
+    message: "Deposit can't exceed the price",
+  });
 
 export const weeklyWindowSchema = z
   .object({

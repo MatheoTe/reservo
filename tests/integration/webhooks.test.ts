@@ -5,7 +5,14 @@ import { WebhookSignatureError } from "@/server/payments/types";
 import { applyPaymentEvent, handleWebhook } from "@/server/payments/webhooks";
 import { createPublicBooking } from "@/server/services/bookings";
 
-import { admin, createTestOrg, insertBookingDirect, type TestOrg, tomorrowAt, useCleanDatabase } from "./helpers";
+import {
+  admin,
+  createTestOrg,
+  insertBookingDirect,
+  type TestOrg,
+  tomorrowAt,
+  useCleanDatabase,
+} from "./helpers";
 
 const provider = new FakePaymentProvider("http://localhost:3000", "test-fake-secret");
 
@@ -57,7 +64,8 @@ describe("payment webhooks", () => {
 
     await expect(handleWebhook(provider, body, signature)).resolves.toBe("processed");
 
-    const [booking] = await admin`select status, hold_expires_at from bookings where id = ${result.bookingId}`;
+    const [booking] =
+      await admin`select status, hold_expires_at from bookings where id = ${result.bookingId}`;
     expect(booking).toMatchObject({ status: "confirmed", hold_expires_at: null });
     expect((await paymentFor(result.bookingId)).status).toBe("succeeded");
     const topics = await admin`select topic from outbox where org_id = ${org.orgId} order by id`;
@@ -79,7 +87,11 @@ describe("payment webhooks", () => {
     expect(await handleWebhook(provider, body, signature)).toBe("duplicate");
     expect(await handleWebhook(provider, body, signature)).toBe("duplicate");
 
-    const n = (await admin<{ n: number }[]>`select count(*)::int as n from outbox where topic = 'booking.confirmed'`)[0]!.n;
+    const n = (
+      await admin<
+        { n: number }[]
+      >`select count(*)::int as n from outbox where topic = 'booking.confirmed'`
+    )[0]!.n;
     expect(n).toBe(1);
     const events = await admin`select * from webhook_events`;
     expect(events).toHaveLength(1);
@@ -95,18 +107,31 @@ describe("payment webhooks", () => {
       bookingId: result.bookingId,
       externalId: payment.external_id,
     };
-    const outcomes = await Promise.all(Array.from({ length: 8 }, () => applyPaymentEvent("fake", event)));
+    const outcomes = await Promise.all(
+      Array.from({ length: 8 }, () => applyPaymentEvent("fake", event)),
+    );
     expect(outcomes.filter((o) => o === "processed")).toHaveLength(1);
     expect(outcomes.filter((o) => o === "duplicate")).toHaveLength(7);
-    const n = (await admin<{ n: number }[]>`select count(*)::int as n from audit_log where action = 'booking.payment_confirmed'`)[0]!.n;
+    const n = (
+      await admin<
+        { n: number }[]
+      >`select count(*)::int as n from audit_log where action = 'booking.payment_confirmed'`
+    )[0]!.n;
     expect(n).toBe(1);
   });
 
   it("rejects a bad signature before touching the database", async () => {
-    const { body } = provider.sign({ id: "evt_forged", type: "subscription.cancelled", orgId: org.orgId, subscriptionId: "sub_1" });
+    const { body } = provider.sign({
+      id: "evt_forged",
+      type: "subscription.cancelled",
+      orgId: org.orgId,
+      subscriptionId: "sub_1",
+    });
     const forged = new FakePaymentProvider("http://x", "attacker-secret").sign(JSON.parse(body));
     expect(() => provider.parseWebhook(body, forged.signature)).toThrow(WebhookSignatureError);
-    await expect(handleWebhook(provider, body, forged.signature)).rejects.toBeInstanceOf(WebhookSignatureError);
+    await expect(handleWebhook(provider, body, forged.signature)).rejects.toBeInstanceOf(
+      WebhookSignatureError,
+    );
     expect(await admin`select * from webhook_events`).toHaveLength(0);
   });
 
@@ -174,14 +199,35 @@ describe("payment webhooks", () => {
   });
 
   it("subscription events switch the plan", async () => {
-    await applyPaymentEvent("fake", { id: "evt_sub_on", type: "subscription.activated", orgId: org.orgId, customerId: "cus_1", subscriptionId: "sub_1" });
-    expect((await admin`select plan from organizations where id = ${org.orgId}`)[0]!.plan).toBe("pro");
-    await applyPaymentEvent("fake", { id: "evt_sub_off", type: "subscription.cancelled", orgId: org.orgId, subscriptionId: "sub_1" });
-    expect((await admin`select plan from organizations where id = ${org.orgId}`)[0]!.plan).toBe("free");
+    await applyPaymentEvent("fake", {
+      id: "evt_sub_on",
+      type: "subscription.activated",
+      orgId: org.orgId,
+      customerId: "cus_1",
+      subscriptionId: "sub_1",
+    });
+    expect((await admin`select plan from organizations where id = ${org.orgId}`)[0]!.plan).toBe(
+      "pro",
+    );
+    await applyPaymentEvent("fake", {
+      id: "evt_sub_off",
+      type: "subscription.cancelled",
+      orgId: org.orgId,
+      subscriptionId: "sub_1",
+    });
+    expect((await admin`select plan from organizations where id = ${org.orgId}`)[0]!.plan).toBe(
+      "free",
+    );
   });
 
   it("ignored event types are acknowledged without side effects", async () => {
-    expect(await applyPaymentEvent("stripe", { id: "evt_x", type: "ignored", providerType: "charge.updated" })).toBe("ignored");
+    expect(
+      await applyPaymentEvent("stripe", {
+        id: "evt_x",
+        type: "ignored",
+        providerType: "charge.updated",
+      }),
+    ).toBe("ignored");
     expect(await admin`select * from webhook_events`).toHaveLength(0);
   });
 });

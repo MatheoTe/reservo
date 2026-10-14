@@ -7,7 +7,12 @@ import type { EmailMessage } from "./mailer";
  */
 
 const escape = (value: string) =>
-  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 
 function layout(title: string, bodyHtml: string, cta?: { label: string; url: string }): string {
   const button = cta
@@ -36,7 +41,10 @@ export interface BookingEmailData {
 }
 
 export function bookingConfirmedEmail(d: BookingEmailData): EmailMessage {
-  const lines = [`Hi ${d.customerName},`, `Your ${d.serviceName} with ${d.staffName} at ${d.orgName} is confirmed for ${d.when}.`];
+  const lines = [
+    `Hi ${d.customerName},`,
+    `Your ${d.serviceName} with ${d.staffName} at ${d.orgName} is confirmed for ${d.when}.`,
+  ];
   return {
     to: d.to,
     subject: `Confirmed: ${d.serviceName} on ${d.when}`,
@@ -55,14 +63,21 @@ export function bookingReminderEmail(d: BookingEmailData): EmailMessage {
     to: d.to,
     subject: `Reminder: ${d.serviceName} ${d.when}`,
     text: `Hi ${d.customerName},\n\n${line}\n\nNeed to cancel? ${d.manageUrl}`,
-    html: layout("See you soon", `<p>Hi ${escape(d.customerName)},</p><p style="line-height:1.6">${escape(line)}</p>`, {
-      label: "Manage booking",
-      url: d.manageUrl,
-    }),
+    html: layout(
+      "See you soon",
+      `<p>Hi ${escape(d.customerName)},</p><p style="line-height:1.6">${escape(line)}</p>`,
+      {
+        label: "Manage booking",
+        url: d.manageUrl,
+      },
+    ),
   };
 }
 
-export function bookingCancelledEmail(d: BookingEmailData, cancelledBy: "customer" | "business"): EmailMessage {
+export function bookingCancelledEmail(
+  d: BookingEmailData,
+  cancelledBy: "customer" | "business",
+): EmailMessage {
   const line =
     cancelledBy === "customer"
       ? `Your ${d.serviceName} on ${d.when} has been cancelled as requested.`
@@ -71,20 +86,33 @@ export function bookingCancelledEmail(d: BookingEmailData, cancelledBy: "custome
     to: d.to,
     subject: `Cancelled: ${d.serviceName} on ${d.when}`,
     text: `Hi ${d.customerName},\n\n${line}`,
-    html: layout("Booking cancelled", `<p>Hi ${escape(d.customerName)},</p><p style="line-height:1.6">${escape(line)}</p>`),
+    html: layout(
+      "Booking cancelled",
+      `<p>Hi ${escape(d.customerName)},</p><p style="line-height:1.6">${escape(line)}</p>`,
+    ),
   };
 }
 
-export function invitationEmail(d: { to: string; orgName: string; inviterName: string; role: string; url: string }): EmailMessage {
+export function invitationEmail(d: {
+  to: string;
+  orgName: string;
+  inviterName: string;
+  role: string;
+  url: string;
+}): EmailMessage {
   const line = `${d.inviterName} invited you to join ${d.orgName} on Reservo as ${d.role}.`;
   return {
     to: d.to,
     subject: `You're invited to ${d.orgName} on Reservo`,
     text: `${line}\n\nAccept the invitation: ${d.url}\n\nThis link expires in 7 days.`,
-    html: layout("You've been invited", `<p style="line-height:1.6">${escape(line)}</p><p style="color:#71717a;font-size:14px">This link expires in 7 days.</p>`, {
-      label: "Accept invitation",
-      url: d.url,
-    }),
+    html: layout(
+      "You've been invited",
+      `<p style="line-height:1.6">${escape(line)}</p><p style="color:#71717a;font-size:14px">This link expires in 7 days.</p>`,
+      {
+        label: "Accept invitation",
+        url: d.url,
+      },
+    ),
   };
 }
 

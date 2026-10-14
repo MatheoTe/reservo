@@ -14,7 +14,11 @@ export function getPaymentProvider(): PaymentProvider {
   if (!globalForPayments.__reservoPayments) {
     const key = process.env.STRIPE_SECRET_KEY;
     globalForPayments.__reservoPayments = key
-      ? new StripePaymentProvider(key, process.env.STRIPE_WEBHOOK_SECRET ?? "", process.env.STRIPE_PRO_PRICE_ID || undefined)
+      ? new StripePaymentProvider(
+          key,
+          process.env.STRIPE_WEBHOOK_SECRET ?? "",
+          process.env.STRIPE_PRO_PRICE_ID || undefined,
+        )
       : new FakePaymentProvider(
           process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
           process.env.FAKE_PAYMENTS_WEBHOOK_SECRET ?? "dev-fake-webhook-secret",

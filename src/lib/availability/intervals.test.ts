@@ -31,7 +31,10 @@ describe("contains", () => {
 
 describe("normalize", () => {
   it("sorts, merges overlapping and touching ranges, drops empties", () => {
-    expect(normalize([i(20, 30), i(0, 10), i(10, 15), i(25, 40), i(50, 50)])).toEqual([i(0, 15), i(20, 40)]);
+    expect(normalize([i(20, 30), i(0, 10), i(10, 15), i(25, 40), i(50, 50)])).toEqual([
+      i(0, 15),
+      i(20, 40),
+    ]);
   });
 
   it("does not mutate the input", () => {
@@ -43,7 +46,11 @@ describe("normalize", () => {
 
 describe("subtract", () => {
   it("cuts holes in the middle", () => {
-    expect(subtract([i(0, 100)], [i(10, 20), i(50, 60)])).toEqual([i(0, 10), i(20, 50), i(60, 100)]);
+    expect(subtract([i(0, 100)], [i(10, 20), i(50, 60)])).toEqual([
+      i(0, 10),
+      i(20, 50),
+      i(60, 100),
+    ]);
   });
 
   it("handles cuts on the edges and beyond", () => {
@@ -55,7 +62,11 @@ describe("subtract", () => {
   });
 
   it("works across multiple base ranges and unsorted cuts", () => {
-    expect(subtract([i(0, 10), i(20, 30)], [i(25, 26), i(5, 22)])).toEqual([i(0, 5), i(22, 25), i(26, 30)]);
+    expect(subtract([i(0, 10), i(20, 30)], [i(25, 26), i(5, 22)])).toEqual([
+      i(0, 5),
+      i(22, 25),
+      i(26, 30),
+    ]);
   });
 
   it("returns the base untouched with no cuts", () => {

@@ -11,13 +11,15 @@ import { handleWebhook } from "@/server/payments/webhooks";
  */
 export async function POST(request: Request) {
   const provider = getPaymentProvider();
-  if (provider.name !== "stripe") return NextResponse.json({ error: "Stripe is not configured" }, { status: 404 });
+  if (provider.name !== "stripe")
+    return NextResponse.json({ error: "Stripe is not configured" }, { status: 404 });
   const rawBody = await request.text();
   try {
     const outcome = await handleWebhook(provider, rawBody, request.headers.get("stripe-signature"));
     return NextResponse.json({ received: true, outcome });
   } catch (err) {
-    if (err instanceof WebhookSignatureError) return NextResponse.json({ error: err.message }, { status: 400 });
+    if (err instanceof WebhookSignatureError)
+      return NextResponse.json({ error: err.message }, { status: 400 });
     console.error("[webhooks/stripe] processing failed", err);
     return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }

@@ -25,7 +25,10 @@ export class StripePaymentProvider implements PaymentProvider {
   }
 
   async createDepositCheckout(input: DepositCheckoutInput): Promise<CheckoutSession> {
-    const expiresAt = Math.max(input.expiresAt.getTime(), Date.now() + STRIPE_MIN_SESSION_MS + 60_000);
+    const expiresAt = Math.max(
+      input.expiresAt.getTime(),
+      Date.now() + STRIPE_MIN_SESSION_MS + 60_000,
+    );
     const session = await this.stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -71,9 +74,15 @@ export class StripePaymentProvider implements PaymentProvider {
 
   async refundCheckout(externalId: string): Promise<void> {
     const session = await this.stripe.checkout.sessions.retrieve(externalId);
-    const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+    const paymentIntent =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id;
     if (!paymentIntent) throw new Error(`Checkout session ${externalId} has no payment intent`);
-    await this.stripe.refunds.create({ payment_intent: paymentIntent }, { idempotencyKey: `refund-${externalId}` });
+    await this.stripe.refunds.create(
+      { payment_intent: paymentIntent },
+      { idempotencyKey: `refund-${externalId}` },
+    );
   }
 
   parseWebhook(rawBody: string, signatureHeader: string | null): PaymentEvent {
@@ -96,23 +105,51 @@ export function normalizeStripeEvent(event: Stripe.Event): PaymentEvent {
       const orgId = s.metadata?.orgId;
       if (!orgId) break;
       if (s.mode === "payment" && s.metadata?.bookingId && s.payment_status === "paid") {
-        return { id: event.id, type: "deposit.succeeded", orgId, bookingId: s.metadata.bookingId, externalId: s.id };
+        return {
+          id: event.id,
+          type: "deposit.succeeded",
+          orgId,
+          bookingId: s.metadata.bookingId,
+          externalId: s.id,
+        };
       }
-      if (s.mode === "subscription" && typeof s.customer === "string" && typeof s.subscription === "string") {
-        return { id: event.id, type: "subscription.activated", orgId, customerId: s.customer, subscriptionId: s.subscription };
+      if (
+        s.mode === "subscription" &&
+        typeof s.customer === "string" &&
+        typeof s.subscription === "string"
+      ) {
+        return {
+          id: event.id,
+          type: "subscription.activated",
+          orgId,
+          customerId: s.customer,
+          subscriptionId: s.subscription,
+        };
       }
       break;
     }
     case "checkout.session.expired": {
       const s = event.data.object;
       if (s.metadata?.orgId && s.metadata.bookingId) {
-        return { id: event.id, type: "deposit.expired", orgId: s.metadata.orgId, bookingId: s.metadata.bookingId, externalId: s.id };
+        return {
+          id: event.id,
+          type: "deposit.expired",
+          orgId: s.metadata.orgId,
+          bookingId: s.metadata.bookingId,
+          externalId: s.id,
+        };
       }
       break;
     }
     case "customer.subscription.deleted": {
       const sub = event.data.object;
-      if (sub.metadata?.orgId) return { id: event.id, type: "subscription.cancelled", orgId: sub.metadata.orgId, subscriptionId: sub.id };
+      if (sub.metadata?.orgId)
+        return {
+          id: event.id,
+          type: "subscription.cancelled",
+          orgId: sub.metadata.orgId,
+          subscriptionId: sub.id,
+        };
       break;
     }
   }

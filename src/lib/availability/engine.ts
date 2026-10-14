@@ -81,7 +81,10 @@ export function computeSlots(query: AvailabilityQuery): Slot[] {
  * option. Staff ids keep the order given in `preference` so callers can
  * implement round-robin or least-busy assignment.
  */
-export function poolSlots(slots: readonly Slot[], preference: readonly string[] = []): PooledSlot[] {
+export function poolSlots(
+  slots: readonly Slot[],
+  preference: readonly string[] = [],
+): PooledSlot[] {
   const rank = new Map(preference.map((id, i) => [id, i]));
   const byStart = new Map<number, PooledSlot>();
   for (const s of slots) {
@@ -91,7 +94,9 @@ export function poolSlots(slots: readonly Slot[], preference: readonly string[] 
   }
   const pooled = [...byStart.values()].sort((a, b) => a.start - b.start);
   for (const p of pooled) {
-    p.staffIds.sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) || a.localeCompare(b));
+    p.staffIds.sort(
+      (a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) || a.localeCompare(b),
+    );
   }
   return pooled;
 }
@@ -101,7 +106,11 @@ export function isSlotAvailable(query: AvailabilityQuery, staffId: string, start
   return computeSlots(query).some((s) => s.staffId === staffId && s.start === start);
 }
 
-function workingWindowsFor(member: StaffSchedule, date: Temporal.PlainDate, timeZone: string): Interval[] {
+function workingWindowsFor(
+  member: StaffSchedule,
+  date: Temporal.PlainDate,
+  timeZone: string,
+): Interval[] {
   const iso = date.toString();
   const override = member.dateOverrides.find((o) => o.date === iso);
   if (override) return toInstants(override.windows, date, timeZone);
@@ -112,7 +121,11 @@ function workingWindowsFor(member: StaffSchedule, date: Temporal.PlainDate, time
   return subtract(toInstants(hours, date, timeZone), toInstants(breaks, date, timeZone));
 }
 
-function toInstants(windows: readonly WallWindow[], date: Temporal.PlainDate, timeZone: string): Interval[] {
+function toInstants(
+  windows: readonly WallWindow[],
+  date: Temporal.PlainDate,
+  timeZone: string,
+): Interval[] {
   return normalize(
     windows.map((w) => ({
       start: wallTimeToInstant(date, parseWallTime(w.start), timeZone),
@@ -121,7 +134,10 @@ function toInstants(windows: readonly WallWindow[], date: Temporal.PlainDate, ti
   );
 }
 
-function validateQuery(query: AvailabilityQuery): { from: Temporal.PlainDate; to: Temporal.PlainDate } {
+function validateQuery(query: AvailabilityQuery): {
+  from: Temporal.PlainDate;
+  to: Temporal.PlainDate;
+} {
   try {
     assertTimeZone(query.timeZone);
   } catch {
@@ -138,7 +154,8 @@ function validateQuery(query: AvailabilityQuery): { from: Temporal.PlainDate; to
   }
   const days = from.until(to, { largestUnit: "days" }).days;
   if (days < 0) throw new AvailabilityInputError("`from` must not be after `to`.");
-  if (days >= MAX_RANGE_DAYS) throw new AvailabilityInputError(`Range is limited to ${MAX_RANGE_DAYS} days.`);
+  if (days >= MAX_RANGE_DAYS)
+    throw new AvailabilityInputError(`Range is limited to ${MAX_RANGE_DAYS} days.`);
 
   const { service, policy } = query;
   assertPositiveInt(service.durationMinutes, "service.durationMinutes");
@@ -149,7 +166,11 @@ function validateQuery(query: AvailabilityQuery): { from: Temporal.PlainDate; to
   assertNonNegativeInt(policy.maxAdvanceDays, "policy.maxAdvanceDays");
 
   for (const member of query.staff) {
-    const windows = [...member.weeklyHours, ...member.weeklyBreaks, ...member.dateOverrides.flatMap((o) => o.windows)];
+    const windows = [
+      ...member.weeklyHours,
+      ...member.weeklyBreaks,
+      ...member.dateOverrides.flatMap((o) => o.windows),
+    ];
     for (const w of windows) {
       let start: number;
       let end: number;
@@ -161,7 +182,9 @@ function validateQuery(query: AvailabilityQuery): { from: Temporal.PlainDate; to
         throw err;
       }
       if (start >= end) {
-        throw new AvailabilityInputError(`Window ${w.start}-${w.end} for staff ${member.staffId} must end after it starts.`);
+        throw new AvailabilityInputError(
+          `Window ${w.start}-${w.end} for staff ${member.staffId} must end after it starts.`,
+        );
       }
     }
   }
@@ -170,9 +193,11 @@ function validateQuery(query: AvailabilityQuery): { from: Temporal.PlainDate; to
 }
 
 function assertPositiveInt(value: number, name: string): void {
-  if (!Number.isInteger(value) || value <= 0) throw new AvailabilityInputError(`${name} must be a positive integer.`);
+  if (!Number.isInteger(value) || value <= 0)
+    throw new AvailabilityInputError(`${name} must be a positive integer.`);
 }
 
 function assertNonNegativeInt(value: number, name: string): void {
-  if (!Number.isInteger(value) || value < 0) throw new AvailabilityInputError(`${name} must be a non-negative integer.`);
+  if (!Number.isInteger(value) || value < 0)
+    throw new AvailabilityInputError(`${name} must be a non-negative integer.`);
 }

@@ -3,7 +3,9 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Label({ className, ...props }: React.ComponentProps<"label">) {
-  return <label className={cn("text-sm font-medium leading-none select-none", className)} {...props} />;
+  return (
+    <label className={cn("text-sm leading-none font-medium select-none", className)} {...props} />
+  );
 }
 
 /** Label + control + error, wired with aria attributes. */
@@ -28,11 +30,11 @@ export function Field({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {message ? (
-        <p id={`${htmlFor}-error`} role="alert" className="text-xs text-destructive">
+        <p id={`${htmlFor}-error`} role="alert" className="text-destructive text-xs">
           {message}
         </p>
       ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p className="text-muted-foreground text-xs">{hint}</p>
       ) : null}
     </div>
   );

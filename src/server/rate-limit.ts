@@ -27,7 +27,11 @@ export function windowStart(nowMs: number, windowSeconds: number): Date {
  * no extra infrastructure. The trade-off vs. a sliding window is a possible 2x
  * burst at a window boundary, which is acceptable for abuse protection.
  */
-export async function hitRateLimit(key: string, rule: RateLimitRule, nowMs = Date.now()): Promise<RateLimitResult> {
+export async function hitRateLimit(
+  key: string,
+  rule: RateLimitRule,
+  nowMs = Date.now(),
+): Promise<RateLimitResult> {
   const start = windowStart(nowMs, rule.windowSeconds);
   const rows = await getDb().execute<{ count: number }>(sql`
     insert into rate_limits (key, window_start, count)
@@ -44,7 +48,11 @@ export async function hitRateLimit(key: string, rule: RateLimitRule, nowMs = Dat
   };
 }
 
-export async function enforceRateLimit(key: string, rule: RateLimitRule, nowMs = Date.now()): Promise<RateLimitResult> {
+export async function enforceRateLimit(
+  key: string,
+  rule: RateLimitRule,
+  nowMs = Date.now(),
+): Promise<RateLimitResult> {
   const result = await hitRateLimit(key, rule, nowMs);
   if (!result.allowed) {
     throw new AppError("RATE_LIMITED", "Too many requests. Please wait a moment and try again.", {
@@ -56,7 +64,9 @@ export async function enforceRateLimit(key: string, rule: RateLimitRule, nowMs =
 
 /** Housekeeping, run by the worker. */
 export async function purgeExpiredRateLimits(olderThan: Date): Promise<void> {
-  await getDb().execute(sql`delete from rate_limits where window_start < ${olderThan.toISOString()}`);
+  await getDb().execute(
+    sql`delete from rate_limits where window_start < ${olderThan.toISOString()}`,
+  );
 }
 
 export const RATE_LIMITS = {

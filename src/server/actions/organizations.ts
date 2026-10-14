@@ -9,7 +9,9 @@ import { parseOrThrow } from "../http";
 import { createOrganization } from "../services/organizations";
 import { type ActionResult, toActionError } from "./run";
 
-export async function createOrganizationAction(input: unknown): Promise<ActionResult<{ slug: string }>> {
+export async function createOrganizationAction(
+  input: unknown,
+): Promise<ActionResult<{ slug: string }>> {
   let slug: string;
   try {
     const user = await requireUserOrThrow();

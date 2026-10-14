@@ -57,7 +57,8 @@ export function ScheduleEditor({
 }) {
   const [days, setDays] = useState(() => toState(initialHours, initialBreaks));
   const { run, pending } = useAction({ success: `Saved ${staff.name}'s hours` });
-  const update = (i: number, patch: Partial<DayState>) => setDays((d) => d.map((day, j) => (j === i ? { ...day, ...patch } : day)));
+  const update = (i: number, patch: Partial<DayState>) =>
+    setDays((d) => d.map((day, j) => (j === i ? { ...day, ...patch } : day)));
 
   function save() {
     const hours: Window[] = [];
@@ -65,7 +66,8 @@ export function ScheduleEditor({
     days.forEach((d, i) => {
       if (!d.enabled) return;
       hours.push({ weekday: i + 1, start: d.start, end: d.end });
-      if (d.breakStart && d.breakEnd) breaks.push({ weekday: i + 1, start: d.breakStart, end: d.breakEnd });
+      if (d.breakStart && d.breakEnd)
+        breaks.push({ weekday: i + 1, start: d.breakStart, end: d.breakEnd });
     });
     run(() => saveScheduleAction(orgSlug, { staffId: staff.id, hours, breaks }));
   }
@@ -82,27 +84,59 @@ export function ScheduleEditor({
       </CardHeader>
       <CardContent className="grid gap-2">
         {days.map((d, i) => (
-          <div key={DAYS[i]} className="grid grid-cols-[120px_1fr] items-center gap-3 sm:grid-cols-[140px_auto_auto_1fr]">
+          <div
+            key={DAYS[i]}
+            className="grid grid-cols-[120px_1fr] items-center gap-3 sm:grid-cols-[140px_auto_auto_1fr]"
+          >
             <label className="flex items-center gap-2 text-sm font-medium">
-              <input type="checkbox" checked={d.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} className="accent-[var(--primary)]" />
+              <input
+                type="checkbox"
+                checked={d.enabled}
+                onChange={(e) => update(i, { enabled: e.target.checked })}
+                className="accent-[var(--primary)]"
+              />
               {DAYS[i]}
             </label>
             {d.enabled ? (
               <>
                 <div className="flex items-center gap-2">
-                  <Input type="time" aria-label={`${DAYS[i]} start`} className="w-28" value={d.start} onChange={(e) => update(i, { start: e.target.value })} />
+                  <Input
+                    type="time"
+                    aria-label={`${DAYS[i]} start`}
+                    className="w-28"
+                    value={d.start}
+                    onChange={(e) => update(i, { start: e.target.value })}
+                  />
                   <span className="text-muted-foreground">-</span>
-                  <Input type="time" aria-label={`${DAYS[i]} end`} className="w-28" value={d.end} onChange={(e) => update(i, { end: e.target.value })} />
+                  <Input
+                    type="time"
+                    aria-label={`${DAYS[i]} end`}
+                    className="w-28"
+                    value={d.end}
+                    onChange={(e) => update(i, { end: e.target.value })}
+                  />
                 </div>
-                <div className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground sm:col-span-1">
+                <div className="text-muted-foreground col-span-2 flex items-center gap-2 text-sm sm:col-span-1">
                   Break
-                  <Input type="time" aria-label={`${DAYS[i]} break start`} className="w-28" value={d.breakStart} onChange={(e) => update(i, { breakStart: e.target.value })} />
+                  <Input
+                    type="time"
+                    aria-label={`${DAYS[i]} break start`}
+                    className="w-28"
+                    value={d.breakStart}
+                    onChange={(e) => update(i, { breakStart: e.target.value })}
+                  />
                   <span>-</span>
-                  <Input type="time" aria-label={`${DAYS[i]} break end`} className="w-28" value={d.breakEnd} onChange={(e) => update(i, { breakEnd: e.target.value })} />
+                  <Input
+                    type="time"
+                    aria-label={`${DAYS[i]} break end`}
+                    className="w-28"
+                    value={d.breakEnd}
+                    onChange={(e) => update(i, { breakEnd: e.target.value })}
+                  />
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Unavailable</p>
+              <p className="text-muted-foreground text-sm">Unavailable</p>
             )}
           </div>
         ))}

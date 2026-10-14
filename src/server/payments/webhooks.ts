@@ -20,7 +20,10 @@ export type WebhookOutcome = "processed" | "duplicate" | "ignored";
  *  - a failure rolls back the ledger row too, so the provider's retry gets a
  *    clean second chance instead of being silently swallowed
  */
-export async function applyPaymentEvent(provider: PaymentProvider["name"], event: PaymentEvent): Promise<WebhookOutcome> {
+export async function applyPaymentEvent(
+  provider: PaymentProvider["name"],
+  event: PaymentEvent,
+): Promise<WebhookOutcome> {
   if (event.type === "ignored") return "ignored";
 
   return withTenant({ orgId: event.orgId }, async (tx) => {
@@ -33,7 +36,12 @@ export async function applyPaymentEvent(provider: PaymentProvider["name"], event
 
     switch (event.type) {
       case "deposit.succeeded":
-        await confirmDeposit(tx, { orgId: event.orgId, bookingId: event.bookingId, externalId: event.externalId, provider });
+        await confirmDeposit(tx, {
+          orgId: event.orgId,
+          bookingId: event.bookingId,
+          externalId: event.externalId,
+          provider,
+        });
         break;
       case "deposit.expired":
         await expireHold(tx, event.bookingId);
@@ -41,16 +49,30 @@ export async function applyPaymentEvent(provider: PaymentProvider["name"], event
       case "subscription.activated":
         await tx
           .update(organizations)
-          .set({ plan: "pro", stripeCustomerId: event.customerId, stripeSubscriptionId: event.subscriptionId })
+          .set({
+            plan: "pro",
+            stripeCustomerId: event.customerId,
+            stripeSubscriptionId: event.subscriptionId,
+          })
           .where(eq(organizations.id, event.orgId));
-        await audit(tx, { orgId: event.orgId, actorUserId: null, action: "billing.plan_changed", metadata: { plan: "pro" } });
+        await audit(tx, {
+          orgId: event.orgId,
+          actorUserId: null,
+          action: "billing.plan_changed",
+          metadata: { plan: "pro" },
+        });
         break;
       case "subscription.cancelled":
         await tx
           .update(organizations)
           .set({ plan: "free", stripeSubscriptionId: null })
           .where(eq(organizations.id, event.orgId));
-        await audit(tx, { orgId: event.orgId, actorUserId: null, action: "billing.plan_changed", metadata: { plan: "free" } });
+        await audit(tx, {
+          orgId: event.orgId,
+          actorUserId: null,
+          action: "billing.plan_changed",
+          metadata: { plan: "free" },
+        });
         break;
     }
     return "processed";
@@ -58,7 +80,11 @@ export async function applyPaymentEvent(provider: PaymentProvider["name"], event
 }
 
 /** Verify-then-apply, shared by the Stripe and fake webhook routes. */
-export async function handleWebhook(provider: PaymentProvider, rawBody: string, signature: string | null): Promise<WebhookOutcome> {
+export async function handleWebhook(
+  provider: PaymentProvider,
+  rawBody: string,
+  signature: string | null,
+): Promise<WebhookOutcome> {
   const event = provider.parseWebhook(rawBody, signature); // throws WebhookSignatureError
   return applyPaymentEvent(provider.name, event);
 }

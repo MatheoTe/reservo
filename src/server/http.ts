@@ -14,7 +14,9 @@ export function errorResponse(err: unknown): NextResponse<ApiErrorBody> {
   const headers = new Headers();
   if (appError.retryAfterSeconds) headers.set("Retry-After", String(appError.retryAfterSeconds));
   return NextResponse.json(
-    { error: { code: appError.code, message: appError.message, fieldErrors: appError.fieldErrors } },
+    {
+      error: { code: appError.code, message: appError.message, fieldErrors: appError.fieldErrors },
+    },
     { status: appError.status, headers },
   );
 }
@@ -40,5 +42,7 @@ export function parseOrThrow<S extends z.ZodType>(schema: S, input: unknown): z.
  * a load balancer) the left-most X-Forwarded-For entry is the client.
  */
 export function clientIp(headers: Headers): string {
-  return headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip") || "unknown";
+  return (
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip") || "unknown"
+  );
 }

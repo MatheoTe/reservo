@@ -13,9 +13,18 @@ const schema = z.object({
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   EMAIL_FROM: z.string().default("Reservo <no-reply@reservo.local>"),
-  STRIPE_SECRET_KEY: z.string().optional().transform((v) => v || undefined),
-  STRIPE_WEBHOOK_SECRET: z.string().optional().transform((v) => v || undefined),
-  STRIPE_PRO_PRICE_ID: z.string().optional().transform((v) => v || undefined),
+  STRIPE_SECRET_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  STRIPE_PRO_PRICE_ID: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
   FAKE_PAYMENTS_WEBHOOK_SECRET: z.string().default("dev-fake-webhook-secret"),
 });
 
@@ -27,7 +36,9 @@ export function env(): Env {
   if (!cached) {
     const parsed = schema.safeParse(process.env);
     if (!parsed.success) {
-      const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+      const issues = parsed.error.issues
+        .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+        .join("\n");
       throw new Error(`Invalid environment variables:\n${issues}`);
     }
     cached = parsed.data;

@@ -8,7 +8,10 @@ import { z } from "zod";
 export const outboxTopics = {
   "booking.confirmed": z.object({ bookingId: z.uuid() }),
   "booking.reminder": z.object({ bookingId: z.uuid() }),
-  "booking.cancelled": z.object({ bookingId: z.uuid(), cancelledBy: z.enum(["customer", "business"]) }),
+  "booking.cancelled": z.object({
+    bookingId: z.uuid(),
+    cancelledBy: z.enum(["customer", "business"]),
+  }),
   "invitation.created": z.object({ invitationId: z.uuid(), token: z.string().min(20).optional() }),
   "payment.refund_required": z.object({ paymentId: z.uuid(), reason: z.string() }),
 } as const;

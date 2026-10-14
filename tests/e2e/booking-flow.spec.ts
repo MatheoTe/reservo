@@ -74,7 +74,9 @@ test.describe.serial("booking journey", () => {
     await expect(row.getByText("Initial consultation")).toBeVisible();
   });
 
-  test("a deposit goes through checkout and the signed webhook confirms the booking", async ({ page }) => {
+  test("a deposit goes through checkout and the signed webhook confirms the booking", async ({
+    page,
+  }) => {
     // Owner adds a service that requires a deposit.
     await page.goto("/sign-in");
     await page.getByLabel("Email", { exact: true }).fill(owner.email);
@@ -107,8 +109,14 @@ test.describe.serial("booking journey", () => {
     await expect(page.getByText("Deep tissue massage")).toBeVisible();
   });
 
-  test("the owner of another business cannot open this organization's dashboard", async ({ page }) => {
-    await signUp(page, { name: "Outsider", email: `outsider-${run}@e2e.test`, password: "e2e-password-123" });
+  test("the owner of another business cannot open this organization's dashboard", async ({
+    page,
+  }) => {
+    await signUp(page, {
+      name: "Outsider",
+      email: `outsider-${run}@e2e.test`,
+      password: "e2e-password-123",
+    });
     await expect(page).toHaveURL(/\/onboarding$/);
     // Being an owner *somewhere* must not grant anything here.
     await page.getByLabel("Business name").fill(`Rival ${run}`);

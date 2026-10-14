@@ -7,7 +7,11 @@ import { acceptInvitationAction } from "@/server/actions/team";
 export function AcceptInvite({ token }: { token: string }) {
   const { run, pending } = useAction();
   return (
-    <Button className="w-full" disabled={pending} onClick={() => run(() => acceptInvitationAction(token))}>
+    <Button
+      className="w-full"
+      disabled={pending}
+      onClick={() => run(() => acceptInvitationAction(token))}
+    >
       {pending ? "Joining..." : "Accept invitation"}
     </Button>
   );

@@ -3,7 +3,12 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("rounded-xl border bg-card text-card-foreground shadow-xs", className)} {...props} />;
+  return (
+    <div
+      className={cn("bg-card text-card-foreground rounded-xl border shadow-xs", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -15,7 +20,7 @@ export function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
 }
 
 export function CardDescription({ className, ...props }: React.ComponentProps<"p">) {
-  return <p className={cn("text-sm text-muted-foreground", className)} {...props} />;
+  return <p className={cn("text-muted-foreground text-sm", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.ComponentProps<"div">) {
